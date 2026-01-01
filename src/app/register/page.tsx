@@ -5,43 +5,54 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [pw1, setPw1] = useState("");
+  const [pw2, setPw2] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (pw1.length < 8) {
+      setError("Passwort muss mindestens 8 Zeichen haben.");
+      return;
+    }
+    if (pw1 !== pw2) {
+      setError("Passwörter stimmen nicht überein.");
+      return;
+    }
+
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signUp({
       email,
-      password,
+      password: pw1,
     });
 
     setLoading(false);
 
     if (error) {
-      setError("Login fehlgeschlagen. Bitte E-Mail/Passwort prüfen.");
+      setError("Registrierung fehlgeschlagen. Bitte versuche es erneut.");
       return;
     }
 
-    router.push("/app");
+    router.push("/setup");
     router.refresh();
   }
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
-        <div className="ditib-card w-full rounded-2xl p-6 text-white">
+      <div className="mx-auto flex min-h-[100svh] w-full max-w-md items-start px-4 py-8 sm:items-center sm:py-0">
+        <div className="ditib-card w-full rounded-2xl p-5 text-white sm:p-6">
           {/* Header */}
           <div className="flex items-center gap-3">
-            <div className="relative h-10 w-14">
+            <div className="relative h-10 w-14 shrink-0">
               <Image
                 src="/brand/ditib-logo.png"
                 alt="DITIB"
@@ -51,11 +62,11 @@ export default function LoginPage() {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <h1 className="text-xl font-semibold leading-tight">
-                DITIB Cockpit
+                Account erstellen
               </h1>
-              <p className="mt-0.5 text-sm text-white/60">Login</p>
+              <p className="mt-0.5 text-sm text-white/60">Registrierung</p>
             </div>
           </div>
 
@@ -78,10 +89,28 @@ export default function LoginPage() {
               <label className="text-sm text-white/70">Passwort</label>
               <input
                 className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={pw1}
+                onChange={(e) => setPw1(e.target.value)}
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
+                required
+                disabled={loading}
+              />
+              <p className="mt-2 text-xs text-white/50">
+                Mindestens 8 Zeichen.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm text-white/70">
+                Passwort bestätigen
+              </label>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
+                value={pw2}
+                onChange={(e) => setPw2(e.target.value)}
+                type="password"
+                autoComplete="new-password"
                 required
                 disabled={loading}
               />
@@ -98,26 +127,18 @@ export default function LoginPage() {
               disabled={loading}
               className="ditib-btn w-full rounded-xl px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Einloggen..." : "Einloggen"}
+              {loading ? "Erstelle..." : "Registrieren"}
             </button>
           </form>
 
           {/* Actions */}
-          <div className="mt-6 space-y-2 text-sm">
+          <div className="mt-6">
             <button
               type="button"
-              onClick={() => router.push("/register")}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white/90 hover:bg-white/10"
+              onClick={() => router.push("/login")}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80 hover:bg-white/10"
             >
-              Neuen Account erstellen
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push("/setup")}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white/70 hover:bg-white/10"
-            >
-              Zugang zur Gemeinde anfragen / Setup starten
+              Zurück zum Login
             </button>
           </div>
         </div>
