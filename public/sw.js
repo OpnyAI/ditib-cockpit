@@ -1,15 +1,15 @@
 /* DITIB Cockpit Service Worker (minimal, stabil) */
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", (_event) => {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", (_event) => {
   event.waitUntil(self.clients.claim());
 });
 
 // Push event handler
-self.addEventListener("push", (event) => {
+self.addEventListener("push", (_event) => {
   let payload = {};
   try {
     payload = event.data ? event.data.json() : {};
@@ -29,7 +29,7 @@ self.addEventListener("push", (event) => {
   );
 });
 
-self.addEventListener("notificationclick", (event) => {
+self.addEventListener("notificationclick", (_event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/";
 

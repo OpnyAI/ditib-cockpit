@@ -20,11 +20,9 @@ export default function LogoutButton({ className, label = "Logout" }: Props) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw new Error(error.message);
-
-      // Hard redirect, damit wirklich alles “frisch” ist
       window.location.assign("/login");
-    } catch (e: any) {
-      setError(e?.message ?? "Logout fehlgeschlagen.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Logout fehlgeschlagen.");
       setLoading(false);
     }
   }

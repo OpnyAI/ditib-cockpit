@@ -19,10 +19,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     setLoading(false);
 
@@ -48,7 +45,6 @@ export default function LoginPage() {
       >
         <div className="w-full max-w-md">
           <div className="ui-card p-5 sm:p-6">
-            {/* Header */}
             <div className="flex items-center gap-3">
               <div className="relative h-10 w-14 shrink-0">
                 <Image
@@ -68,7 +64,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Form */}
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <div>
                 <label className="text-sm ui-muted">E-Mail</label>
@@ -111,7 +106,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Actions */}
             <div className="mt-5 space-y-2 text-sm">
               <button
                 type="button"
@@ -130,8 +124,7 @@ export default function LoginPage() {
               </button>
 
               <p className="pt-2 text-xs ui-muted leading-relaxed">
-                Tipp: Wenn du nach dem Login keiner Gemeinde zugeordnet bist,
-                nutze „Zugang anfragen“.
+                Tipp: Wenn du nach dem Login keiner Gemeinde zugeordnet bist, nutze „Zugang anfragen“.
               </p>
             </div>
           </div>

@@ -74,7 +74,7 @@ export default function SetupJoinForm() {
         }),
       });
 
-      const json = await res.json().catch(() => ({} as any));
+      const json = await res.json().catch(() => ({} as unknown));
 
       if (!res.ok) {
         setError(json?.error ?? "Unbekannter Fehler beim Senden der Anfrage.");
@@ -88,8 +88,8 @@ export default function SetupJoinForm() {
           "Anfrage gesendet ✅ Du wirst nach Freigabe benachrichtigt."
         );
       }
-    } catch (e: any) {
-      setError(e?.message ?? "Netzwerkfehler beim Senden der Anfrage.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Netzwerkfehler beim Senden der Anfrage.");
     } finally {
       setSubmitting(false);
     }

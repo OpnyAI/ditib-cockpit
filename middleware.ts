@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // 2) Supabase SSR Client über Cookies (Middleware-sicher)
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: req.headers,
     },
@@ -53,7 +53,7 @@ export async function middleware(req: NextRequest) {
 
   // 4) Public Routes (ohne Login erreichbar)
   const publicRoutes = ["/login", "/register", "/setup", "/pending"];
-  const isPublic = publicRoutes.some(
+  const _isPublic = publicRoutes.some(
     (p) => pathname === p || pathname.startsWith(p + "/")
   );
 

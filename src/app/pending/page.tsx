@@ -1,5 +1,6 @@
 // src/app/pending/page.tsx
 import Image from "next/image";
+import Link from "next/link";
 import LogoutButton from "@/components/auth/LogoutButton";
 import { getSetupState } from "@/lib/auth/get-setup-state";
 import { redirect } from "next/navigation";
@@ -56,19 +57,19 @@ export default async function PendingPage() {
 
           {/* Actions */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <a
+            <Link
               href="/"
               className="ditib-btn inline-flex w-full items-center justify-center rounded-xl px-4 py-2 text-sm font-medium sm:w-auto"
             >
               Status prüfen / Reload
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/setup/join"
               className="inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/85 hover:bg-white/10 sm:w-auto"
             >
               Andere Gemeinde anfragen
-            </a>
+            </Link>
           </div>
         </div>
       </div>

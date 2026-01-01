@@ -44,7 +44,7 @@ export default async function AdminJoinRequestsPage() {
     .eq("tenant_id", me.tenant_id)
     .order("created_at", { ascending: false });
 
-  const rows = (data ?? []) as JoinRequestRow[];
+  const rows = (data ?? []) as unknown as JoinRequestRow[];
 
   return (
     <div className="mx-auto w-full max-w-5xl p-6 text-white">

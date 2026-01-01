@@ -47,99 +47,102 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto flex min-h-[100svh] w-full max-w-md items-start px-4 py-8 sm:items-center sm:py-0">
-        <div className="ditib-card w-full rounded-2xl p-5 text-white sm:p-6">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="relative h-10 w-14 shrink-0">
-              <Image
-                src="/brand/ditib-logo.png"
-                alt="DITIB"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold leading-tight">
-                Account erstellen
-              </h1>
-              <p className="mt-0.5 text-sm text-white/60">Registrierung</p>
-            </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="text-sm text-white/70">E-Mail</label>
-              <input
-                className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                autoComplete="email"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-white/70">Passwort</label>
-              <input
-                className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
-                value={pw1}
-                onChange={(e) => setPw1(e.target.value)}
-                type="password"
-                autoComplete="new-password"
-                required
-                disabled={loading}
-              />
-              <p className="mt-2 text-xs text-white/50">
-                Mindestens 8 Zeichen.
-              </p>
-            </div>
-
-            <div>
-              <label className="text-sm text-white/70">
-                Passwort bestätigen
-              </label>
-              <input
-                className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
-                value={pw2}
-                onChange={(e) => setPw2(e.target.value)}
-                type="password"
-                autoComplete="new-password"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {error ? (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-                {error}
+    <div className="min-h-[100svh]">
+      <div
+        className={[
+          "min-h-[100svh] w-full px-4 py-10",
+          "flex items-center justify-center",
+          "overflow-auto",
+          "[padding-top:calc(env(safe-area-inset-top)+24px)]",
+          "[padding-bottom:calc(env(safe-area-inset-bottom)+24px)]",
+        ].join(" ")}
+      >
+        <div className="w-full max-w-md">
+          <div className="ui-card p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <div className="relative h-10 w-14 shrink-0">
+                <Image
+                  src="/brand/ditib-logo.png"
+                  alt="DITIB"
+                  fill
+                  className="object-contain"
+                  priority
+                />
               </div>
-            ) : null}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="ditib-btn w-full rounded-xl px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Erstelle..." : "Registrieren"}
-            </button>
-          </form>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-xl font-semibold leading-tight">
+                  Account erstellen
+                </h1>
+                <p className="mt-0.5 text-sm ui-muted">Registrierung</p>
+              </div>
+            </div>
 
-          {/* Actions */}
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => router.push("/login")}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-            >
-              Zurück zum Login
-            </button>
+            <form onSubmit={onSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="text-sm ui-muted">E-Mail</label>
+                <input
+                  className="ui-input mt-1"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  autoComplete="email"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm ui-muted">Passwort</label>
+                <input
+                  className="ui-input mt-1"
+                  value={pw1}
+                  onChange={(e) => setPw1(e.target.value)}
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  disabled={loading}
+                />
+                <p className="mt-2 text-xs ui-muted">Mindestens 8 Zeichen.</p>
+              </div>
+
+              <div>
+                <label className="text-sm ui-muted">Passwort bestätigen</label>
+                <input
+                  className="ui-input mt-1"
+                  value={pw2}
+                  onChange={(e) => setPw2(e.target.value)}
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              {error ? (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-200">
+                  {error}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="ui-btn ui-btn-primary w-full px-4 py-3 text-sm"
+              >
+                {loading ? "Erstelle..." : "Registrieren"}
+              </button>
+            </form>
+
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="ui-btn w-full px-4 py-3"
+              >
+                Zurück zum Login
+              </button>
+            </div>
           </div>
         </div>
       </div>
