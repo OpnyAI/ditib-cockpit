@@ -1,200 +1,185 @@
-/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@config "../../tailwind.config.ts";
-@import "tailwindcss";
-
-/* =========================================
-   Apple-like Design Tokens (Light/Dark)
-   - Default: System
-   - Optional override via <html data-theme="dark|light">
-   ========================================= */
+/* -------------------------------------------------------
+   Design Tokens (Tailwind Theme via CSS Variables)
+   - Light + Dark
+   - DITIB brand red as primary
+-------------------------------------------------------- */
 
 :root {
-  --accent: 227 6 19; /* DITIB red as RGB */
+  /* radius scale */
+  --radius: 18px;
 
-  /* Typography */
-  --text: 17 17 17;
-  --muted: 99 99 102;
+  /* DITIB brand (HSL values for consistent mixing) */
+  --ditib-red: 3 72% 49%; /* ≈ #d22a24 */
+  --ditib-red-strong: 3 78% 44%; /* hover/active */
+  --ditib-red-soft: 3 72% 58%; /* subtle highlights */
 
-  /* Surfaces (Light) */
-  --bg: 245 245 247;
-  --surface: 255 255 255;
-  --surface-2: 250 250 252;
-  --border: 210 210 215;
+  /* Light mode (optional – you can keep it clean & bright later) */
+  --background: 0 0% 100%;
+  --foreground: 220 15% 10%;
 
-  /* Shadows */
-  --shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 10%;
 
-  /* Radius */
-  --r-xl: 20px;
-  --r-lg: 16px;
-  --r-md: 12px;
-  --r-sm: 10px;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 15% 10%;
 
-  /* Focus */
-  --focus: 0 0 0 3px rgba(227, 6, 19, 0.25);
+  --primary: var(--ditib-red);
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 220 12% 96%;
+  --secondary-foreground: 220 15% 12%;
+
+  --muted: 220 12% 96%;
+  --muted-foreground: 220 10% 40%;
+
+  --accent: 220 12% 96%;
+  --accent-foreground: 220 15% 12%;
+
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 14% 90%;
+  --input: 220 14% 90%;
+  --ring: var(--ditib-red);
 }
 
-/* Dark Mode – System */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: 235 235 245;
-    --muted: 152 152 160;
+.dark {
+  /* Dark mode: Apple-like, no heavy gradients */
+  --background: 222 24% 6%;
+  --foreground: 210 20% 96%;
 
-    --bg: 10 10 12;
-    --surface: 18 18 22;
-    --surface-2: 24 24 28;
-    --border: 44 44 52;
+  --card: 222 20% 10%;
+  --card-foreground: 210 20% 96%;
 
-    --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  --popover: 222 20% 10%;
+  --popover-foreground: 210 20% 96%;
+
+  --primary: var(--ditib-red);
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 222 18% 14%;
+  --secondary-foreground: 210 20% 96%;
+
+  --muted: 222 18% 14%;
+  --muted-foreground: 215 14% 70%;
+
+  --accent: 222 18% 14%;
+  --accent-foreground: 210 20% 96%;
+
+  --destructive: 0 72% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 220 12% 22%;
+  --input: 220 12% 22%;
+  --ring: var(--ditib-red);
+}
+
+/* -------------------------------------------------------
+   Base Styles
+-------------------------------------------------------- */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-/* Explicit override */
-html[data-theme="light"] {
-  --text: 17 17 17;
-  --muted: 99 99 102;
+/* -------------------------------------------------------
+   Global UI helpers (optional, but keeps things consistent)
+-------------------------------------------------------- */
+@layer utilities {
+  .ui-glass {
+    border: 1px solid color-mix(in oklab, white 10%, transparent);
+    background: color-mix(in oklab, white 6%, transparent);
+    box-shadow: 0 14px 50px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+  }
 
-  --bg: 245 245 247;
-  --surface: 255 255 255;
-  --surface-2: 250 250 252;
-  --border: 210 210 215;
+  .ui-glass-soft {
+    border: 1px solid color-mix(in oklab, white 9%, transparent);
+    background: color-mix(in oklab, white 4%, transparent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(14px);
+  }
 
-  --shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  .ui-focus-ring {
+    outline: none;
+    box-shadow: 0 0 0 1px color-mix(in oklab, white 10%, transparent),
+      0 0 0 3px color-mix(in oklab, hsl(var(--ring)) 40%, transparent);
+  }
 }
 
-html[data-theme="dark"] {
-  --text: 235 235 245;
-  --muted: 152 152 160;
+/* -------------------------------------------------------
+   Backward compatibility (legacy classes)
+   - so existing pages keep looking correct
+-------------------------------------------------------- */
 
-  --bg: 10 10 12;
-  --surface: 18 18 22;
-  --surface-2: 24 24 28;
-  --border: 44 44 52;
-
-  --shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
-}
-
-/* Base */
-html,
-body {
-  height: 100%;
-}
-
-body {
-  background: rgb(var(--bg));
-  color: rgb(var(--text));
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* =========================================
-   Reusable UI primitives (central!)
-   ========================================= */
-
-.ui-card {
-  background: rgb(var(--surface));
-  border: 1px solid rgb(var(--border));
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow);
-}
-
-.ui-surface {
-  background: rgb(var(--surface));
-  border: 1px solid rgb(var(--border));
-  border-radius: var(--r-lg);
-}
-
-.ui-muted {
-  color: rgb(var(--muted));
-}
-
-.ui-border {
-  border-color: rgb(var(--border));
-}
-
-/* Inputs */
-.ui-input {
-  width: 100%;
-  border-radius: var(--r-md);
-  border: 1px solid rgb(var(--border));
-  background: rgb(var(--surface-2));
-  color: rgb(var(--text));
-  padding: 10px 12px;
-  outline: none;
-}
-
-.ui-input:focus {
-  box-shadow: var(--focus);
-  border-color: rgba(227, 6, 19, 0.55);
+/* Cards */
+.ditib-card {
+  border: 1px solid color-mix(in oklab, white 10%, transparent);
+  background: color-mix(in oklab, white 6%, transparent);
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
 }
 
 /* Buttons */
-.ui-btn {
+.ditib-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-md);
-  border: 1px solid rgb(var(--border));
-  background: rgb(var(--surface));
-  color: rgb(var(--text));
-  padding: 10px 12px;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  transition: transform 0.06s ease, background 0.15s ease,
-    border-color 0.15s ease;
+  transition: transform 120ms ease, background 120ms ease,
+    border-color 120ms ease, opacity 120ms ease;
+  border: 1px solid color-mix(in oklab, white 10%, transparent);
+  background: color-mix(in oklab, white 6%, transparent);
+  color: color-mix(in oklab, white 92%, transparent);
 }
 
-.ui-btn:hover {
-  background: rgba(0, 0, 0, 0.03);
+.ditib-btn:hover {
+  background: color-mix(in oklab, white 10%, transparent);
 }
 
-@media (prefers-color-scheme: dark) {
-  .ui-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-  }
-}
-
-.ui-btn:active {
-  transform: scale(0.99);
-}
-
-.ui-btn-primary {
-  background: rgb(var(--accent));
-  border-color: rgba(0, 0, 0, 0.12);
-  color: white;
-}
-
-.ui-btn-primary:hover {
-  filter: brightness(0.98);
-}
-
-.ui-btn-ghost {
-  background: transparent;
-}
-
-.ui-btn:disabled,
-.ui-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Keep legacy class names but map to the new primitives */
-.ditib-card {
-  background: rgb(var(--surface));
-  border: 1px solid rgb(var(--border));
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow);
-}
-
-.ditib-btn {
-  background: rgb(var(--accent));
-  color: white;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: var(--r-md);
+.ditib-btn:active {
+  transform: translateY(1px);
 }
 
 .ditib-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* Primary (DITIB red) */
+.ditib-btn--primary {
+  border-color: color-mix(in oklab, white 12%, transparent);
+  background: hsl(var(--ditib-red));
+  color: white;
+}
+
+.ditib-btn--primary:hover {
+  background: hsl(var(--ditib-red-strong));
+}
+
+.ditib-btn--primary:active {
+  transform: translateY(1px);
 }
