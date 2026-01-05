@@ -19,7 +19,10 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     setLoading(false);
 
@@ -34,6 +37,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[100svh]">
+      {/* Background / Vibe */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        {/* Soft vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(1200px_800px_at_50%_-10%,rgba(255,255,255,0.06),transparent_60%),radial-gradient(900px_700px_at_0%_100%,rgba(227,6,19,0.08),transparent_55%),radial-gradient(900px_700px_at_100%_90%,rgba(120,140,180,0.10),transparent_55%)]" />
+        {/* Subtle grain */}
+        <div className="absolute inset-0 opacity-[0.06] [background-image:radial-gradient(rgba(255,255,255,0.8)_1px,transparent_1px)] [background-size:18px_18px]" />
+      </div>
+
       <div
         className={[
           "min-h-[100svh] w-full px-4 py-10",
@@ -64,35 +75,42 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <form
+              onSubmit={onSubmit}
+              className="mt-6 space-y-4"
+              aria-busy={loading}
+            >
               <div>
                 <label className="text-sm ui-muted">E-Mail</label>
                 <input
-                  className="ui-input mt-1"
+                  className="ui-input mt-1 text-base"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
                   autoComplete="email"
                   required
                   disabled={loading}
+                  inputMode="email"
+                  placeholder="name@domain.de"
                 />
               </div>
 
               <div>
                 <label className="text-sm ui-muted">Passwort</label>
                 <input
-                  className="ui-input mt-1"
+                  className="ui-input mt-1 text-base"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type="password"
                   autoComplete="current-password"
                   required
                   disabled={loading}
+                  placeholder="••••••••"
                 />
               </div>
 
               {error ? (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-200">
+                <div className="ui-alert" role="alert">
                   {error}
                 </div>
               ) : null}
@@ -124,9 +142,15 @@ export default function LoginPage() {
               </button>
 
               <p className="pt-2 text-xs ui-muted leading-relaxed">
-                Tipp: Wenn du nach dem Login keiner Gemeinde zugeordnet bist, nutze „Zugang anfragen“.
+                Tipp: Wenn du nach dem Login keiner Gemeinde zugeordnet bist,
+                nutze „Zugang anfragen“.
               </p>
             </div>
+          </div>
+
+          {/* Bottom hint */}
+          <div className="mt-4 text-center text-xs ui-muted">
+            Datenschutzkonform • Token-basiertes Design • Dark-first
           </div>
         </div>
       </div>

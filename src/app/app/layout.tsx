@@ -11,6 +11,8 @@ export default async function AppLayout({
 
   if (!ctx.userId) redirect("/login");
   if (ctx.needsSetup) redirect("/setup");
+  if (ctx.needsApproval && ctx.approvalStatus === "PENDING")
+    redirect("/pending");
   if (!ctx.profile || !ctx.tenant || !ctx.role) redirect("/setup");
 
   return (

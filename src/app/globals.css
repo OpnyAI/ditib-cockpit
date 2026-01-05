@@ -1,185 +1,276 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* -------------------------------------------------------
-   Design Tokens (Tailwind Theme via CSS Variables)
-   - Light + Dark
-   - DITIB brand red as primary
--------------------------------------------------------- */
+/* =========================
+   DITIB Theme Tokens (RGB)
+   Light default + Dark override
+========================= */
 
+/* LIGHT (default) */
 :root {
-  /* radius scale */
-  --radius: 18px;
+  /* Base */
+  --bg: 246 248 252; /* near-white */
+  --text: 12 18 28; /* near-black */
+  --muted: 95 107 125; /* muted text */
 
-  /* DITIB brand (HSL values for consistent mixing) */
-  --ditib-red: 3 72% 49%; /* ≈ #d22a24 */
-  --ditib-red-strong: 3 78% 44%; /* hover/active */
-  --ditib-red-soft: 3 72% 58%; /* subtle highlights */
+  /* Surfaces */
+  --surface: 255 255 255; /* cards/topbar/sidebar bg */
+  --surface-2: 246 248 252; /* hover/secondary surface */
 
-  /* Light mode (optional – you can keep it clean & bright later) */
-  --background: 0 0% 100%;
-  --foreground: 220 15% 10%;
+  /* Lines / focus */
+  --border: 210 218 230; /* subtle border */
+  --ring: 120 140 180; /* focus ring */
 
-  --card: 0 0% 100%;
-  --card-foreground: 220 15% 10%;
+  /* Brand */
+  --accent: 227 6 19; /* DITIB Rot */
+  --accent-2: 255 40 55; /* hover/active red */
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 15% 10%;
-
-  --primary: var(--ditib-red);
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 220 12% 96%;
-  --secondary-foreground: 220 15% 12%;
-
-  --muted: 220 12% 96%;
-  --muted-foreground: 220 10% 40%;
-
-  --accent: 220 12% 96%;
-  --accent-foreground: 220 15% 12%;
-
-  --destructive: 0 72% 50%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 220 14% 90%;
-  --input: 220 14% 90%;
-  --ring: var(--ditib-red);
+  /* Status */
+  --danger: 255 80 80;
 }
 
-.dark {
-  /* Dark mode: Apple-like, no heavy gradients */
-  --background: 222 24% 6%;
-  --foreground: 210 20% 96%;
+/* DARK */
+html.dark {
+  /* Base */
+  --bg: 10 15 26; /* #0a0f1a */
+  --text: 240 245 255; /* near-white */
+  --muted: 170 180 200; /* muted text */
 
-  --card: 222 20% 10%;
-  --card-foreground: 210 20% 96%;
+  /* Surfaces */
+  --surface: 16 22 36; /* cards/topbar/sidebar bg */
+  --surface-2: 20 28 46; /* hover/secondary surface */
 
-  --popover: 222 20% 10%;
-  --popover-foreground: 210 20% 96%;
+  /* Lines / focus */
+  --border: 38 50 72; /* subtle border */
+  --ring: 120 140 180; /* focus ring */
 
-  --primary: var(--ditib-red);
-  --primary-foreground: 0 0% 100%;
+  /* Brand */
+  --accent: 227 6 19; /* DITIB Rot */
+  --accent-2: 255 40 55; /* hover/active red */
 
-  --secondary: 222 18% 14%;
-  --secondary-foreground: 210 20% 96%;
-
-  --muted: 222 18% 14%;
-  --muted-foreground: 215 14% 70%;
-
-  --accent: 222 18% 14%;
-  --accent-foreground: 210 20% 96%;
-
-  --destructive: 0 72% 50%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 220 12% 22%;
-  --input: 220 12% 22%;
-  --ring: var(--ditib-red);
+  /* Status */
+  --danger: 255 80 80;
 }
 
-/* -------------------------------------------------------
-   Base Styles
--------------------------------------------------------- */
-@layer base {
-  * {
-    @apply border-border;
-  }
+/* =========================
+   Base styling
+========================= */
 
-  html,
-  body {
-    height: 100%;
-  }
-
-  body {
-    @apply bg-background text-foreground antialiased;
-  }
+html {
+  color-scheme: light;
 }
 
-/* -------------------------------------------------------
-   Global UI helpers (optional, but keeps things consistent)
--------------------------------------------------------- */
-@layer utilities {
-  .ui-glass {
-    border: 1px solid color-mix(in oklab, white 10%, transparent);
-    background: color-mix(in oklab, white 6%, transparent);
-    box-shadow: 0 14px 50px rgba(0, 0, 0, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(14px);
-  }
-
-  .ui-glass-soft {
-    border: 1px solid color-mix(in oklab, white 9%, transparent);
-    background: color-mix(in oklab, white 4%, transparent);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(14px);
-  }
-
-  .ui-focus-ring {
-    outline: none;
-    box-shadow: 0 0 0 1px color-mix(in oklab, white 10%, transparent),
-      0 0 0 3px color-mix(in oklab, hsl(var(--ring)) 40%, transparent);
-  }
+html.dark {
+  color-scheme: dark;
 }
 
-/* -------------------------------------------------------
-   Backward compatibility (legacy classes)
-   - so existing pages keep looking correct
--------------------------------------------------------- */
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+  font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+}
 
-/* Cards */
-.ditib-card {
-  border: 1px solid color-mix(in oklab, white 10%, transparent);
-  background: color-mix(in oklab, white 6%, transparent);
-  border-radius: 1.25rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+/* Helper */
+.ui-muted {
+  color: rgb(var(--muted));
+}
+
+/* =========================
+   Reusable UI classes
+========================= */
+
+.ui-card {
+  background: rgb(var(--surface) / 0.78);
+  border: 1px solid rgb(var(--border) / 0.9);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.25);
   backdrop-filter: blur(14px);
 }
 
-/* Buttons */
-.ditib-btn {
+html.dark .ui-card {
+  background: rgb(var(--surface) / 0.55);
+  border: 1px solid rgb(var(--border) / 0.7);
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.03);
+}
+
+.ui-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: rgb(var(--surface-2) / 0.9);
+  border: 1px solid rgb(var(--border) / 0.95);
+  color: rgb(var(--text));
+  outline: none;
+}
+
+html.dark .ui-input {
+  background: rgb(var(--surface-2) / 0.55);
+  border: 1px solid rgb(var(--border) / 0.75);
+}
+
+.ui-input::placeholder {
+  color: rgb(var(--muted));
+}
+
+.ui-input:focus {
+  border-color: rgb(var(--ring) / 0.9);
+  box-shadow: 0 0 0 3px rgb(var(--ring) / 0.25);
+}
+
+.ui-btn {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgb(var(--border) / 0.95);
+  background: rgb(var(--surface-2) / 0.85);
+  color: rgb(var(--text));
+  transition: 150ms ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  height: 2.5rem;
-  padding: 0 1rem;
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: transform 120ms ease, background 120ms ease,
-    border-color 120ms ease, opacity 120ms ease;
-  border: 1px solid color-mix(in oklab, white 10%, transparent);
-  background: color-mix(in oklab, white 6%, transparent);
-  color: color-mix(in oklab, white 92%, transparent);
+  gap: 10px;
+  line-height: 1;
 }
 
-.ditib-btn:hover {
-  background: color-mix(in oklab, white 10%, transparent);
+html.dark .ui-btn {
+  border: 1px solid rgb(var(--border) / 0.75);
+  background: rgb(var(--surface-2) / 0.35);
 }
 
-.ditib-btn:active {
+.ui-btn:hover {
+  background: rgb(var(--surface-2) / 1);
+}
+
+html.dark .ui-btn:hover {
+  background: rgb(var(--surface-2) / 0.55);
+}
+
+.ui-btn:active {
   transform: translateY(1px);
 }
 
-.ditib-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* Primary (DITIB red) */
-.ditib-btn--primary {
-  border-color: color-mix(in oklab, white 12%, transparent);
-  background: hsl(var(--ditib-red));
+.ui-btn-primary {
+  border-color: rgb(var(--accent) / 0.92);
+  background: rgb(var(--accent) / 0.92);
   color: white;
 }
 
-.ditib-btn--primary:hover {
-  background: hsl(var(--ditib-red-strong));
+.ui-btn-primary:hover {
+  background: rgb(var(--accent-2) / 0.92);
+  border-color: rgb(var(--accent-2) / 0.92);
 }
 
-.ditib-btn--primary:active {
-  transform: translateY(1px);
+.ui-btn-ghost {
+  background: transparent;
+  border-color: rgb(var(--border) / 0.7);
+}
+
+.ui-link {
+  color: rgb(var(--muted));
+  text-decoration: none;
+}
+
+.ui-link:hover {
+  color: rgb(var(--text));
+}
+
+/* =========================
+   Mobile Sheet (Apple-like)
+========================= */
+
+@keyframes uiBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes uiSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ui-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(6px);
+  animation: uiBackdropIn 140ms ease-out;
+}
+
+.ui-sheet-in {
+  animation: uiSheetIn 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ui-divider {
+  height: 1px;
+  background: rgb(var(--border) / 0.7);
+}
+
+html.dark .ui-divider {
+  background: rgb(var(--border) / 0.55);
+}
+
+.ui-grabber {
+  height: 6px;
+  width: 44px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.16);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+}
+
+html.dark .ui-grabber {
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+.ui-row {
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none;
+  transition: 150ms ease;
+  border: 1px solid transparent;
+  color: rgb(var(--text));
+}
+
+.ui-row-idle:hover {
+  background: rgb(var(--surface-2) / 0.55);
+  border-color: rgb(var(--border) / 0.6);
+}
+
+html.dark .ui-row-idle:hover {
+  background: rgb(var(--surface-2) / 0.42);
+  border-color: rgb(var(--border) / 0.55);
+}
+
+.ui-row-active {
+  background: rgb(var(--surface-2) / 0.65);
+  border-color: rgb(var(--border) / 0.75);
+}
+
+html.dark .ui-row-active {
+  background: rgb(var(--surface-2) / 0.5);
+  border-color: rgb(var(--border) / 0.6);
+}
+
+.ui-row-chevron {
+  font-size: 18px;
+  line-height: 1;
+  color: rgb(var(--muted));
 }

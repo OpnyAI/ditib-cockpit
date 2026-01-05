@@ -1,47 +1,40 @@
-/* DITIB Cockpit Service Worker (minimal, stabil) */
+// public/sw.js (oder wo dein SW liegt – wichtig ist: das ist der registrierte SW)
 
-self.addEventListener("install", () => {
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", () => {
-  event.waitUntil(self.clients.claim());
-});
-
-// Push event handler
-self.addEventListener("push", () => {
-  let payload = {};
+self.addEventListener("push", (event) => {
+  let data = {};
   try {
-    payload = event.data ? event.data.json() : {};
-  } catch {
-    payload = { title: "DITIB Cockpit", body: event.data?.text() || "" };
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = { title: "DITIB Cockpit", body: event.data?.text() || "Test Push" };
   }
 
-  const title = payload.title || "DITIB Cockpit";
-  const body = payload.body || "Neue Benachrichtigung";
-  const url = payload.url || "/";
+  const title = data.title || "DITIB Cockpit";
+  const options = {
+    body: data.body || "Test Push empfangen ✅",
+    icon: data.icon || "/icons/icon-192.png",
+    badge: data.badge || "/icons/badge-96.png",
+    data: data.data || {},
+    tag: data.tag || "ditib-test",
+    renotify: true,
+  };
 
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      data: { url },
-    })
-  );
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener("notificationclick", () => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/";
+  const url =
+    (event.notification.data && event.notification.data.url) || "/app";
 
   event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clients) => {
-        for (const client of clients) {
-          if (client.url.includes(url) && "focus" in client)
-            return client.focus();
-        }
-        if (self.clients.openWindow) return self.clients.openWindow(url);
-      })
+    (async () => {
+      const allClients = await clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      const existing = allClients.find((c) => c.url.includes(url));
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })()
   );
 });

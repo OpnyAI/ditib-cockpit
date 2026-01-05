@@ -1,10 +1,11 @@
 "use client";
 
-import * as React from "react";
 import type { Profile, Tenant } from "@/lib/auth/types";
-import { Sidebar } from "@/components/shell/Sidebar";
+import { useEffect, useState } from "react";
 import { Topbar } from "@/components/shell/Topbar";
+import { Sidebar } from "@/components/shell/Sidebar";
 import { MobileNav } from "@/components/shell/MobileNav";
+import { ensureWebPushSubscribed } from "@/lib/push/client";
 
 export function AppShell({
   tenant,
@@ -15,10 +16,15 @@ export function AppShell({
   profile: Profile;
   children: React.ReactNode;
 }) {
-  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    // Push leise initialisieren – UI bleibt unverändert
+    ensureWebPushSubscribed().catch(() => {});
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[rgb(var(--bg))] text-[rgb(var(--text))]">
+    <div className="min-h-screen bg-[rgb(var(--bg))]">
       <Topbar
         tenant={tenant}
         profile={profile}
@@ -26,24 +32,31 @@ export function AppShell({
         setMobileNavOpen={setMobileNavOpen}
       />
 
+      {/* Layout container */}
+      <div className="mx-auto w-full max-w-[1760px] px-4 md:px-8">
+        <div className="py-6 md:py-10">
+          <div className="md:flex md:items-start md:gap-10 lg:gap-12">
+            {/* Sidebar */}
+            <aside className="hidden md:block md:w-[240px] lg:w-[260px] md:shrink-0">
+              <div className="md:sticky md:top-[96px]">
+                <Sidebar profile={profile} />
+              </div>
+            </aside>
+
+            {/* Main */}
+            <main className="min-w-0 flex-1 max-w-none">
+              <div className="max-w-none">{children}</div>
+            </main>
+          </div>
+        </div>
+      </div>
+
       <MobileNav
         tenant={tenant}
         profile={profile}
         open={mobileNavOpen}
-        setOpen={setMobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
       />
-
-      <div className={mobileNavOpen ? "pointer-events-none select-none" : ""}>
-        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-4 md:px-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[260px_1fr]">
-            <aside className="hidden md:block">
-              <Sidebar tenant={tenant} profile={profile} />
-            </aside>
-
-            <main className="ui-card min-h-[70vh] p-4 md:p-6">{children}</main>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

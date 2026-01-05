@@ -1,4 +1,5 @@
 // src/lib/auth/get-setup-state.ts
+import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type SetupState =
@@ -8,9 +9,11 @@ export type SetupState =
   | { kind: "NEEDS_SETUP" };
 
 export async function getSetupState(): Promise<SetupState> {
+  // Wichtig: verhindert, dass Next.js das Ergebnis cached
+  noStore();
+
   const supabase = await createSupabaseServerClient();
 
-  // WICHTIG: getUser() statt getSession() (deine Warnung im Terminal)
   const { data: userRes, error: userErr } = await supabase.auth.getUser();
   const user = userRes?.user;
 
@@ -38,6 +41,5 @@ export async function getSetupState(): Promise<SetupState> {
 
   if (!reqErr && reqRow?.status === "PENDING") return { kind: "PENDING" };
 
-  // Sonst: Setup notwendig
   return { kind: "NEEDS_SETUP" };
 }

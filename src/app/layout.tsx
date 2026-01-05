@@ -1,6 +1,12 @@
 // src/app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "DITIB Cockpit",
@@ -13,10 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de">
-      <body className="min-h-screen">
-        {/* Dezenter Top-Glow / Header-Hint (token-basiert) */}
-        <div className="pointer-events-none fixed left-0 right-0 top-0 z-[-1] h-24 border-b border-[rgb(var(--border))]/40 bg-[rgb(var(--surface))]/40 backdrop-blur" />
+    <html lang="de" suppressHydrationWarning>
+      <body className={`${inter.className} min-h-screen antialiased`}>
         {children}
       </body>
     </html>

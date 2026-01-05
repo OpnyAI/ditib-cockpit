@@ -1,85 +1,112 @@
+"use client";
+
+import type { Profile } from "@/lib/auth/types";
 import Link from "next/link";
-import type { Profile, Tenant, Role } from "@/lib/auth/types";
+import { usePathname } from "next/navigation";
 
-type NavItem = {
-  href: string;
-  label: string;
-  roles: Role[];
-  badge?: string;
-};
-
-const NAV: NavItem[] = [
-  {
-    href: "/app",
-    label: "Dashboard",
-    roles: ["ADMIN", "BUCHHALTER", "KOMMUNIKATION"],
-  },
-  { href: "/app/finance", label: "Finanzen", roles: ["ADMIN", "BUCHHALTER"] },
-  {
-    href: "/app/communication",
-    label: "Mitteilungen",
-    roles: ["ADMIN", "KOMMUNIKATION"],
-  },
-  { href: "/app/events", label: "Termine", roles: ["ADMIN", "KOMMUNIKATION"] },
-  { href: "/app/settings", label: "Einstellungen", roles: ["ADMIN"] },
+const NAV = [
+  { href: "/app", label: "Dashboard" },
+  { href: "/app/finance", label: "Finanzen" },
+  { href: "/app/communication", label: "Mitteilungen" },
+  { href: "/app/events", label: "Termine" },
+  { href: "/app/settings", label: "Einstellungen" },
 ];
 
-export function Sidebar({
-  tenant,
-  profile,
-}: {
-  tenant: Tenant;
-  profile: Profile;
-}) {
-  const items = NAV.filter((i) => i.roles.includes(profile.role));
-  const logoSrc = tenant.logo_url || "/brand/ditib-logo.png";
+const ADMIN_NAV = [{ href: "/app/admin/requests", label: "Join Requests" }];
+
+function isActive(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  if (href === "/app") return pathname === "/app";
+  return pathname.startsWith(href);
+}
+
+export function Sidebar({ profile }: { profile: Profile }) {
+  const pathname = usePathname();
+  const isAdmin = profile.role === "ADMIN";
 
   return (
-    <div className="ui-card p-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logoSrc}
-            alt="Logo"
-            className="max-h-8 max-w-8 object-contain"
-          />
-        </div>
+    <nav className="ui-card p-3">
+      <div className="space-y-1">
+        {NAV.map((item) => {
+          const active = isActive(pathname, item.href);
 
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold">{tenant.name}</div>
-          <div className="text-xs ui-muted">{profile.role}</div>
-        </div>
-      </div>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={[
+                "group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm",
+                "transition-colors",
+                "hover:bg-[rgb(var(--surface-2))]/60",
+                active
+                  ? "bg-[rgb(var(--surface-2))]/70 border border-[rgb(var(--border))]"
+                  : "border border-transparent",
+              ].join(" ")}
+            >
+              <span className="font-medium">{item.label}</span>
 
-      <div className="mt-4 space-y-1">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center justify-between rounded-xl border border-transparent px-3 py-2 text-sm hover:border-[rgb(var(--border))] hover:bg-[rgb(var(--surface-2))]"
-          >
-            <span>{item.label}</span>
-            {item.badge ? (
-              <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-2 py-0.5 text-xs ui-muted">
-                {item.badge}
+              <span
+                className={[
+                  "ui-muted transition-transform",
+                  "group-hover:translate-x-[1px]",
+                ].join(" ")}
+                aria-hidden
+              >
+                ›
               </span>
-            ) : null}
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] p-3">
-        <div className="text-xs ui-muted">Öffentliche Seiten</div>
-        <div className="mt-2 text-sm">
-          <Link
-            href={`/g/${tenant.slug}`}
-            className="break-all underline decoration-[rgb(var(--border))] underline-offset-4 hover:opacity-80"
-          >
-            /g/{tenant.slug}
-          </Link>
-        </div>
+      {isAdmin ? (
+        <>
+          <div className="my-3 h-px w-full bg-[rgb(var(--border))]/60" />
+
+          <div className="px-1 pb-2 pt-1">
+            <div className="text-[12px] tracking-wide ui-muted">Admin</div>
+          </div>
+
+          <div className="space-y-1">
+            {ADMIN_NAV.map((item) => {
+              const active = isActive(pathname, item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={[
+                    "group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm",
+                    "transition-colors",
+                    "hover:bg-[rgb(var(--surface-2))]/60",
+                    active
+                      ? "bg-[rgb(var(--surface-2))]/70 border border-[rgb(var(--border))]"
+                      : "border border-transparent",
+                  ].join(" ")}
+                >
+                  <span className="font-medium">{item.label}</span>
+
+                  <span
+                    className={[
+                      "ui-muted transition-transform",
+                      "group-hover:translate-x-[1px]",
+                    ].join(" ")}
+                    aria-hidden
+                  >
+                    ›
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
+      {/* subtiler Footer-Spacer, damit es nicht so “abgeschnitten” wirkt */}
+      <div className="mt-3 h-px w-full bg-[rgb(var(--border))]/60" />
+      <div className="mt-3 text-xs ui-muted leading-5">
+        Schnellzugriff auf Module
       </div>
-    </div>
+    </nav>
   );
 }

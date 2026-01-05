@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type DirectoryRow = {
+type JoinableDirectoryRow = {
   id: string;
   name: string;
   city: string | null;
@@ -13,11 +14,12 @@ type DirectoryRow = {
 
 export default function SetupJoinForm() {
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
+  const router = useRouter();
 
   const [displayName, setDisplayName] = React.useState("");
   const [directoryId, setDirectoryId] = React.useState<string>("");
 
-  const [items, setItems] = React.useState<DirectoryRow[]>([]);
+  const [items, setItems] = React.useState<JoinableDirectoryRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -27,15 +29,15 @@ export default function SetupJoinForm() {
   React.useEffect(() => {
     let cancelled = false;
 
-    async function loadDirectory() {
+    async function loadJoinableDirectory() {
       setLoading(true);
       setError(null);
 
+      // ✅ Lädt NUR aktivierte Gemeinden (Tenant existiert) aus der View
       const { data, error } = await supabase
-        .from("ditib_directory")
+        .from("joinable_directory")
         .select("id,name,city,postal_code")
-        .order("name", { ascending: true })
-        .limit(1000);
+        .order("name", { ascending: true });
 
       if (cancelled) return;
 
@@ -43,13 +45,13 @@ export default function SetupJoinForm() {
         setError(error.message);
         setItems([]);
       } else {
-        setItems((data ?? []) as DirectoryRow[]);
+        setItems((data ?? []) as JoinableDirectoryRow[]);
       }
 
       setLoading(false);
     }
 
-    loadDirectory();
+    loadJoinableDirectory();
 
     return () => {
       cancelled = true;
@@ -57,7 +59,11 @@ export default function SetupJoinForm() {
   }, [supabase]);
 
   const canSubmit =
-    displayName.trim().length > 1 && !!directoryId && !loading && !submitting;
+    displayName.trim().length > 1 &&
+    !!directoryId &&
+    !loading &&
+    !submitting &&
+    items.length > 0;
 
   async function submitRequest() {
     setError(null);
@@ -70,6 +76,7 @@ export default function SetupJoinForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           display_name: displayName.trim(),
+          // ✅ directory_id ist hier die selected Gemeinde aus der View (entspricht ditib_directory.id)
           directory_id: directoryId,
         }),
       });
@@ -88,8 +95,15 @@ export default function SetupJoinForm() {
           "Anfrage gesendet ✅ Du wirst nach Freigabe benachrichtigt."
         );
       }
+
+      // Optional: direkt zum Pending-Screen navigieren
+      router.push("/pending");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Netzwerkfehler beim Senden der Anfrage.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Netzwerkfehler beim Senden der Anfrage."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -113,8 +127,8 @@ export default function SetupJoinForm() {
             Zugang anfragen
           </h1>
           <p className="mt-0.5 text-sm text-white/70">
-            Wähle deine Gemeinde aus dem DITIB-Verzeichnis und stelle eine
-            Anfrage. Ein ADMIN muss dich freigeben.
+            Wähle eine aktivierte Gemeinde aus und sende deine Anfrage. Ein
+            ADMIN muss dich freigeben.
           </p>
         </div>
       </div>
@@ -134,7 +148,7 @@ export default function SetupJoinForm() {
 
         <div>
           <label className="block text-sm text-white/80">
-            Gemeinde (DITIB Verzeichnis)
+            Gemeinde (aktiviert)
           </label>
 
           <div className="mt-2">
@@ -142,10 +156,14 @@ export default function SetupJoinForm() {
               value={directoryId}
               onChange={(e) => setDirectoryId(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
-              disabled={loading || submitting}
+              disabled={loading || submitting || items.length === 0}
             >
               <option value="">
-                {loading ? "Lade Gemeinden..." : "Bitte auswählen ..."}
+                {loading
+                  ? "Lade aktivierte Gemeinden..."
+                  : items.length === 0
+                  ? "Keine aktivierten Gemeinden verfügbar"
+                  : "Bitte auswählen ..."}
               </option>
 
               {items.map((g) => {
@@ -165,9 +183,15 @@ export default function SetupJoinForm() {
 
           {error ? (
             <p className="mt-2 text-sm text-red-300">{error}</p>
+          ) : items.length === 0 && !loading ? (
+            <p className="mt-2 text-sm text-amber-200">
+              Aktuell ist keine Gemeinde aktiviert. Ein ADMIN muss zuerst das
+              Admin-Setup durchführen.
+            </p>
           ) : (
             <p className="mt-2 text-xs text-white/50">
-              Es werden bis zu 1000 Einträge geladen (alphabetisch).
+              Es werden nur Gemeinden angezeigt, die bereits im System aktiviert
+              wurden.
             </p>
           )}
 

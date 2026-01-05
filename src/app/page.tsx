@@ -1,124 +1,210 @@
-"use client";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { getSessionContext } from "@/lib/auth/get-session-context";
+import { createSupabaseServerReadClient } from "@/lib/supabase/server-read";
 
-import { useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+type ActivityRow = {
+  id: string;
+  action: string;
+  entity_type: string;
+  actor_name: string | null;
+  created_at: string;
+  meta: Record<string, unknown>;
+};
 
-export default function LoginPage() {
-  const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
+function formatAction(a: ActivityRow) {
+  switch (a.action) {
+    case "TENANT_CREATED":
+      return "Gemeinde wurde initial eingerichtet";
+    case "JOIN_REQUEST_CREATED":
+      return "Beitrittsanfrage wurde erstellt";
+    case "JOIN_REQUEST_APPROVED":
+      return "Beitrittsanfrage wurde freigegeben";
+    default:
+      return a.action;
+  }
+}
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function QuickCard({
+  href,
+  title,
+  subtitle,
+}: {
+  href: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={[
+        "ui-card",
+        "group",
+        "px-4 py-4 md:px-5 md:py-5",
+        "transition",
+        "hover:opacity-[0.98]",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--ring))]",
+      ].join(" ")}
+    >
+      <div className="flex min-h-[76px] items-center justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-5">{title}</div>
+          <div className="mt-1 text-sm ui-muted leading-5">{subtitle}</div>
+        </div>
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+        <div className="shrink-0">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/50 transition group-hover:bg-[rgb(var(--surface-2))]/80">
+            <span className="text-xl ui-muted leading-none" aria-hidden>
+              ›
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      setError("Login fehlgeschlagen. Bitte E-Mail/Passwort prüfen.");
-      return;
-    }
-
-    router.push("/app");
-    router.refresh();
+function EmptyActivityCard({ canSeeActivity }: { canSeeActivity: boolean }) {
+  if (!canSeeActivity) {
+    return (
+      <div className="mt-3 text-sm ui-muted">
+        Activity Log ist ein internes Feature und nur für Vorstand/ADMIN
+        sichtbar.
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
-        <div className="ditib-card w-full rounded-2xl p-6 text-white">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="relative h-10 w-14">
-              <Image
-                src="/brand/ditib-logo.png"
-                alt="DITIB"
-                fill
-                className="object-contain"
-                priority
-              />
+    <div className="mt-4 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/55 p-4 md:p-5">
+      <div className="text-sm font-semibold leading-5">
+        Noch keine Aktivitäten vorhanden
+      </div>
+      <p className="mt-1 text-sm ui-muted leading-5">
+        Sobald Nutzer Aktionen ausführen (z. B. Join Requests, Freigaben,
+        Setups), erscheinen sie hier automatisch.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link className="ui-btn ui-btn-primary px-4" href="/app/admin/requests">
+          Anfragen ansehen
+        </Link>
+        <Link className="ui-btn px-4" href="/app/settings">
+          Einstellungen prüfen
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default async function DashboardPage() {
+  const ctx = await getSessionContext();
+
+  if (!ctx.userId) redirect("/login");
+  if (ctx.needsApproval && ctx.approvalStatus === "PENDING")
+    redirect("/pending");
+  if (ctx.needsSetup) redirect("/setup");
+  if (!ctx.tenant || !ctx.profile) redirect("/setup");
+
+  const canSeeActivity =
+    ctx.profile.role === "ADMIN" || ctx.profile.is_board_member === true;
+
+  let activity: ActivityRow[] = [];
+
+  if (canSeeActivity) {
+    const supabase = await createSupabaseServerReadClient();
+
+    const { data } = await supabase
+      .from("activity_log")
+      .select("id, action, entity_type, actor_name, created_at, meta")
+      .eq("tenant_id", ctx.tenant.id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    activity = (data ?? []) as ActivityRow[];
+  }
+
+  /**
+   * WICHTIG:
+   * - Wir zentrieren den Content-Block (Apple-like),
+   * - und schalten 2 Spalten bereits ab md (weil die Sidebar die Breite frisst).
+   */
+  return (
+    <div className="w-full">
+      {/* Centered content block */}
+      <div className="mx-auto w-full max-w-[1240px]">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-8">
+          {/* LEFT */}
+          <div className="md:col-span-7 xl:col-span-8 space-y-6">
+            {/* Header */}
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Dashboard
+              </h1>
+              <p className="text-sm ui-muted">
+                Überblick über die wichtigsten Bereiche deiner Gemeinde.
+              </p>
             </div>
 
-            <div>
-              <h1 className="text-xl font-semibold leading-tight">
-                DITIB Cockpit
-              </h1>
-              <p className="mt-0.5 text-sm text-white/60">Login</p>
-            </div>
+            {/* Quick actions */}
+            <section className="ui-card p-4 md:p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="text-sm font-semibold">Bereiche</div>
+                <div className="text-xs ui-muted">Schnellzugriff</div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
+                <QuickCard
+                  href="/app/finance"
+                  title="Finanzen"
+                  subtitle="Einnahmen & Ausgaben"
+                />
+                <QuickCard
+                  href="/app/communication"
+                  title="Mitteilungen"
+                  subtitle="Ankündigungen & Infos"
+                />
+                <QuickCard
+                  href="/app/events"
+                  title="Termine"
+                  subtitle="Gebetszeiten & Events"
+                />
+              </div>
+            </section>
           </div>
 
-          {/* Form */}
-          <form onSubmit={onSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="text-sm text-white/70">E-Mail</label>
-              <input
-                className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                autoComplete="email"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-white/70">Passwort</label>
-              <input
-                className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white outline-none focus:border-white/20"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type="password"
-                autoComplete="current-password"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {error ? (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-                {error}
+          {/* RIGHT */}
+          <div className="md:col-span-5 xl:col-span-4">
+            <section className="ui-card p-4 md:p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Letzte Aktivitäten</h2>
+                {!canSeeActivity ? (
+                  <span className="text-xs ui-muted">Nur Vorstand</span>
+                ) : null}
               </div>
-            ) : null}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="ditib-btn w-full rounded-xl px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Einloggen..." : "Einloggen"}
-            </button>
-          </form>
-
-          {/* Actions */}
-          <div className="mt-6 space-y-2 text-sm">
-            <button
-              type="button"
-              onClick={() => router.push("/register")}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white/90 hover:bg-white/10"
-            >
-              Neuen Account erstellen
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push("/setup")}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white/70 hover:bg-white/10"
-            >
-              Zugang zur Gemeinde anfragen / Setup starten
-            </button>
+              {!canSeeActivity || activity.length === 0 ? (
+                <EmptyActivityCard canSeeActivity={canSeeActivity} />
+              ) : (
+                <div className="mt-4 space-y-2">
+                  {activity.map((a) => (
+                    <div
+                      key={a.id}
+                      className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/55 px-3 py-3"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <div className="text-sm leading-5">
+                          {formatAction(a)}
+                        </div>
+                        <div className="text-xs ui-muted">
+                          {a.actor_name ? `${a.actor_name} · ` : ""}
+                          {new Date(a.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </div>
         </div>
       </div>

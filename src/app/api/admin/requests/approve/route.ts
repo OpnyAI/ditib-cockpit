@@ -2,14 +2,21 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerMutableClient } from "@/lib/supabase/server-mutable";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 import { writeActivityLog } from "@/lib/activity/log";
+import { sendPushToUser } from "@/lib/push/send";
 
 export async function POST(req: Request) {
   const supabaseAuth = await createSupabaseServerMutableClient();
-  const { data: sessionData } = await supabaseAuth.auth.getSession();
-  const adminUserId = sessionData.session?.user?.id;
 
-  if (!adminUserId)
+  // vorher: getSession() -> jetzt: getUser() (sicherer + keine Warning-Spam)
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabaseAuth.auth.getUser();
+  const adminUserId = user?.id;
+
+  if (userErr || !adminUserId) {
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
 
   const body = await req.json();
   const request_id = String(body.request_id ?? "").trim();
@@ -92,6 +99,20 @@ export async function POST(req: Request) {
     visibility: "ADMIN_ONLY",
     meta: { approved_user_id: reqRow.user_id, role, is_board_member },
   });
+
+  // Push an Antragsteller (best effort)
+  try {
+    await sendPushToUser(srv as any, reqRow.tenant_id, reqRow.user_id, {
+      title: "DITIB Cockpit",
+      body: "Dein Beitritt wurde genehmigt ✅",
+      url: "/app",
+    });
+  } catch (e: any) {
+    console.error(
+      "Push send (admin/requests/approve) failed:",
+      e?.message || e
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
