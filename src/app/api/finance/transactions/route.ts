@@ -1,11 +1,17 @@
+// src/app/api/finance/transactions/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerReadClient } from "@/lib/supabase/server-read";
+import type {
+  FinanceTransaction,
+  FinanceTransactionsListResponse,
+  FinanceTransactionCreateResponse,
+  TxType,
+} from "@/lib/finance/types";
 
 export const runtime = "nodejs";
 
 type Role = "ADMIN" | "VORSTAND" | "KASSIERER" | "MITARBEITER";
-type TxType = "INCOME" | "EXPENSE";
 
 function getAdminClient() {
   const url =
@@ -70,6 +76,9 @@ function isValidDateYYYYMMDD(s: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
 
+const TX_SELECT =
+  "id, tenant_id, account_id, category_id, type, booking_date, amount_cents, counterparty, memo, reference, is_archived, archived_at, archived_by, created_by, updated_by, created_at, updated_at";
+
 export async function GET(req: Request) {
   const ctx = await getAuthContext();
   if ("error" in ctx) return ctx.error;
@@ -101,9 +110,7 @@ export async function GET(req: Request) {
 
   let q = admin
     .from("finance_transactions")
-    .select(
-      "id, tenant_id, account_id, category_id, type, booking_date, amount_cents, counterparty, memo, reference, is_archived, archived_at, archived_by, created_by, updated_by, created_at, updated_at"
-    )
+    .select(TX_SELECT)
     .eq("tenant_id", ctx.tenantId)
     .order("booking_date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -137,7 +144,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ transactions: data ?? [], limit, offset });
+  const payload: FinanceTransactionsListResponse = {
+    transactions: (data ?? []) as FinanceTransaction[],
+    limit,
+    offset,
+  };
+
+  return NextResponse.json(payload);
 }
 
 export async function POST(req: Request) {
@@ -234,14 +247,16 @@ export async function POST(req: Request) {
       is_archived: false,
       created_by: ctx.userId, // ✅ Audit Actor
     })
-    .select(
-      "id, tenant_id, account_id, category_id, type, booking_date, amount_cents, counterparty, memo, reference, is_archived, archived_at, archived_by, created_by, updated_by, created_at, updated_at"
-    )
+    .select(TX_SELECT)
     .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ transaction: data }, { status: 201 });
+  const payload: FinanceTransactionCreateResponse = {
+    transaction: data as FinanceTransaction,
+  };
+
+  return NextResponse.json(payload, { status: 201 });
 }

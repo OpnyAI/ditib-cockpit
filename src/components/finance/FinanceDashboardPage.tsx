@@ -15,6 +15,8 @@ import {
 import { TransactionsTable } from "./TransactionsTable";
 import { CreateTransactionModal } from "./CreateTransactionModal";
 
+const UNCATEGORIZED_ID = "__uncategorized__";
+
 export default function FinanceDashboardPage() {
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -35,6 +37,8 @@ export default function FinanceDashboardPage() {
 
   // Toast nach CSV Export
   const [toast, setToast] = React.useState<string | null>(null);
+
+  const didInitialLoad = React.useRef(false);
 
   React.useEffect(() => {
     if (!toast) return;
@@ -67,32 +71,44 @@ export default function FinanceDashboardPage() {
     return ys;
   }, [now]);
 
-  async function loadAll() {
-    setLoading(true);
-    try {
-      const [accRes, catRes, txRes] = await Promise.all([
-        fetch("/api/finance/accounts", { cache: "no-store" }),
-        fetch("/api/finance/categories", { cache: "no-store" }),
-        fetch(
-          `/api/finance/transactions?limit=200&offset=0${
-            showArchived ? "&includeArchived=1" : ""
-          }`,
-          { cache: "no-store" }
-        ),
-      ]);
+  const selectedMonthKey = React.useMemo(() => {
+    return toInputMonthValue(year, monthIndex0); // "YYYY-MM"
+  }, [year, monthIndex0]);
 
-      const accJson = await accRes.json().catch(() => null);
-      const catJson = await catRes.json().catch(() => null);
-      const txJson = await txRes.json().catch(() => null);
+  function buildTxUrl(monthKey: string, includeArchived: boolean) {
+    const params = new URLSearchParams();
+    params.set("month", monthKey); // serverseitig filtern
+    params.set("limit", "500");
+    params.set("offset", "0");
+    if (includeArchived) params.set("includeArchived", "1");
+    return `/api/finance/transactions?${params.toString()}`;
+  }
 
-      setAccounts(Array.isArray(accJson?.accounts) ? accJson.accounts : []);
-      setCategories(Array.isArray(catJson?.categories) ? catJson.categories : []);
-      setTransactions(
-        Array.isArray(txJson?.transactions) ? txJson.transactions : []
-      );
-    } finally {
-      setLoading(false);
-    }
+  async function loadStaticData() {
+    const [accRes, catRes] = await Promise.all([
+      fetch("/api/finance/accounts", { cache: "no-store" }),
+      fetch("/api/finance/categories", { cache: "no-store" }),
+    ]);
+
+    const accJson = await accRes.json().catch(() => null);
+    const catJson = await catRes.json().catch(() => null);
+
+    setAccounts(Array.isArray(accJson?.accounts) ? accJson.accounts : []);
+    setCategories(Array.isArray(catJson?.categories) ? catJson.categories : []);
+  }
+
+  async function loadMonthTransactions(
+    monthKey: string,
+    includeArchived: boolean
+  ) {
+    const txRes = await fetch(buildTxUrl(monthKey, includeArchived), {
+      cache: "no-store",
+    });
+
+    const txJson = await txRes.json().catch(() => null);
+    setTransactions(
+      Array.isArray(txJson?.transactions) ? txJson.transactions : []
+    );
   }
 
   async function refresh(includeArchived?: boolean) {
@@ -101,38 +117,45 @@ export default function FinanceDashboardPage() {
       const inc =
         typeof includeArchived === "boolean" ? includeArchived : showArchived;
 
-      const txRes = await fetch(
-        `/api/finance/transactions?limit=200&offset=0${
-          inc ? "&includeArchived=1" : ""
-        }`,
-        { cache: "no-store" }
-      );
-      const txJson = await txRes.json().catch(() => null);
-      setTransactions(
-        Array.isArray(txJson?.transactions) ? txJson.transactions : []
-      );
+      await loadMonthTransactions(selectedMonthKey, inc);
     } finally {
       setRefreshing(false);
     }
   }
 
   React.useEffect(() => {
-    void loadAll();
+    let alive = true;
+
+    (async () => {
+      setLoading(true);
+      try {
+        await loadStaticData();
+        if (!alive) return;
+        await loadMonthTransactions(selectedMonthKey, showArchived);
+      } finally {
+        if (!alive) return;
+        didInitialLoad.current = true;
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
+    if (!didInitialLoad.current) return;
     void refresh(showArchived);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showArchived]);
-
-  const selectedMonthKey = React.useMemo(() => {
-    return toInputMonthValue(year, monthIndex0); // "YYYY-MM"
-  }, [year, monthIndex0]);
+  }, [selectedMonthKey, showArchived]);
 
   const monthTx = React.useMemo(() => {
     const key = selectedMonthKey;
-    return transactions.filter((t) => monthKeyFromDateISO(t.booking_date) === key);
+    return transactions.filter(
+      (t) => monthKeyFromDateISO(t.booking_date) === key
+    );
   }, [transactions, selectedMonthKey]);
 
   const incomeCents = React.useMemo(() => {
@@ -154,6 +177,7 @@ export default function FinanceDashboardPage() {
   const categoryNameById = React.useMemo(() => {
     const m = new Map<string, string>();
     for (const c of categories) m.set(c.id, c.name);
+    m.set(UNCATEGORIZED_ID, "Ohne Kategorie");
     return m;
   }, [categories]);
 
@@ -168,9 +192,12 @@ export default function FinanceDashboardPage() {
     for (const t of monthTx) {
       if (t.is_archived) continue;
       if (t.type !== "EXPENSE") continue;
-      const prev = m.get(t.category_id) ?? 0;
-      m.set(t.category_id, prev + (t.amount_cents ?? 0));
+
+      const categoryId = t.category_id ?? UNCATEGORIZED_ID;
+      const prev = m.get(categoryId) ?? 0;
+      m.set(categoryId, prev + (t.amount_cents ?? 0));
     }
+
     const rows = Array.from(m.entries()).map(([categoryId, cents]) => ({
       categoryId,
       name: categoryNameById.get(categoryId) ?? "Unbekannte Kategorie",
@@ -246,7 +273,14 @@ export default function FinanceDashboardPage() {
     }
 
     return hints;
-  }, [monthTx, incomeCents, expenseCents, saldoCents, expenseByCategory, showArchived]);
+  }, [
+    monthTx,
+    incomeCents,
+    expenseCents,
+    saldoCents,
+    expenseByCategory,
+    showArchived,
+  ]);
 
   async function archiveTransaction(id: string) {
     setTransactions((prev) =>
@@ -284,7 +318,9 @@ export default function FinanceDashboardPage() {
   }
 
   function exportMonthCsv() {
-    const exportRows = showArchived ? monthTx : monthTx.filter((t) => !t.is_archived);
+    const exportRows = showArchived
+      ? monthTx
+      : monthTx.filter((t) => !t.is_archived);
 
     const header = [
       "Datum",
@@ -307,7 +343,8 @@ export default function FinanceDashboardPage() {
     );
 
     for (const t of sorted) {
-      const category = categoryNameById.get(t.category_id) ?? "";
+      const categoryId = t.category_id ?? UNCATEGORIZED_ID;
+      const category = categoryNameById.get(categoryId) ?? "";
       const account = accountNameById.get(t.account_id) ?? "";
       const typeLabel = t.type === "EXPENSE" ? "AUSGABE" : "EINNAHME";
       const archived = t.is_archived ? "JA" : "NEIN";
@@ -332,14 +369,18 @@ export default function FinanceDashboardPage() {
 
     const bom = "\uFEFF";
     const csv = bom + lines.join("\r\n") + "\r\n";
-    const filename = `ditib-finance-${selectedMonthKey}${showArchived ? "-inkl-archiv" : ""}.csv`;
+    const filename = `ditib-finance-${selectedMonthKey}${
+      showArchived ? "-inkl-archiv" : ""
+    }.csv`;
 
     downloadTextFile(filename, csv, "text/csv;charset=utf-8");
     setToast("CSV heruntergeladen");
   }
 
   const exportDisabled = React.useMemo(() => {
-    const count = (showArchived ? monthTx : monthTx.filter((t) => !t.is_archived)).length;
+    const count = (
+      showArchived ? monthTx : monthTx.filter((t) => !t.is_archived)
+    ).length;
     return loading || refreshing || count === 0;
   }, [monthTx, showArchived, loading, refreshing]);
 
@@ -549,19 +590,27 @@ export default function FinanceDashboardPage() {
               </div>
             </div>
             <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
-              {monthTx.filter((t) => !t.is_archived && t.type === "EXPENSE").length}{" "}
+              {
+                monthTx.filter((t) => !t.is_archived && t.type === "EXPENSE")
+                  .length
+              }{" "}
               Buchungen
             </div>
           </div>
 
           <div className="mt-4 space-y-3">
             {expenseByCategory.length === 0 ? (
-              <div className="text-sm text-white/55">Keine Ausgaben im Monat.</div>
+              <div className="text-sm text-white/55">
+                Keine Ausgaben im Monat.
+              </div>
             ) : (
               expenseByCategory.slice(0, 6).map((row) => {
                 const pct =
                   expenseCents > 0
-                    ? Math.min(100, Math.round((row.cents / expenseCents) * 100))
+                    ? Math.min(
+                        100,
+                        Math.round((row.cents / expenseCents) * 100)
+                      )
                     : 0;
 
                 return (
@@ -588,7 +637,9 @@ export default function FinanceDashboardPage() {
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-white/90">Hinweise</div>
+              <div className="text-sm font-semibold text-white/90">
+                Hinweise
+              </div>
               <div className="mt-1 text-xs text-white/55">
                 Automatisch – regelbasiert, ohne KI.
               </div>
@@ -635,7 +686,8 @@ export default function FinanceDashboardPage() {
           </div>
 
           <div className="mt-4 rounded-xl border border-white/10 bg-black/10 p-3 text-xs text-white/60">
-            Tipp: Die Buchungen-Liste unten ist deine Arbeitsfläche (Suchen / Filtern / Archivieren).
+            Tipp: Die Buchungen-Liste unten ist deine Arbeitsfläche (Suchen /
+            Filtern / Archivieren).
           </div>
         </div>
       </div>

@@ -19,12 +19,13 @@ export type Transaction = {
   type: TxType;
   amount_cents: number;
   account_id: string;
-  category_id: string;
+  category_id: string | null; // ✅ Backend erlaubt null
   counterparty: string | null;
   memo: string | null;
   reference: string | null;
-  is_archived?: boolean;
-  created_at?: string;
+
+  is_archived: boolean; // ✅ nicht optional, weil Backend immer liefert (und UI darauf baut)
+  created_at?: string; // UI braucht das nicht zwingend, optional ok
 };
 
 export type HintTone = "neutral" | "warn" | "info";

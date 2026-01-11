@@ -1,5 +1,5 @@
 // src/app/api/finance/transactions/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerReadClient } from "@/lib/supabase/server-read";
 
@@ -111,7 +111,12 @@ async function getTxOr404(
   return data;
 }
 
-export async function GET(req: Request, ctx: { params?: { id?: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
   const ctxAuth = await getAuthContext();
   if ("error" in ctxAuth) return ctxAuth.error;
 
@@ -123,7 +128,7 @@ export async function GET(req: Request, ctx: { params?: { id?: string } }) {
   const includeArchived = searchParams.get("includeArchived") === "1";
   const debug = searchParams.get("debug") === "1";
 
-  const requestedId = getRequestedId(req, ctx.params);
+  const requestedId = getRequestedId(req, { id });
 
   if (!requestedId || !isUuid(requestedId)) {
     return NextResponse.json(
@@ -185,7 +190,12 @@ export async function GET(req: Request, ctx: { params?: { id?: string } }) {
   return NextResponse.json({ transaction: tx });
 }
 
-export async function PATCH(req: Request, ctx: { params?: { id?: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
   const ctxAuth = await getAuthContext();
   if ("error" in ctxAuth) return ctxAuth.error;
 
@@ -193,7 +203,7 @@ export async function PATCH(req: Request, ctx: { params?: { id?: string } }) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  const requestedId = getRequestedId(req, ctx.params);
+  const requestedId = getRequestedId(req, { id });
   if (!requestedId || !isUuid(requestedId)) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
@@ -377,7 +387,12 @@ export async function PATCH(req: Request, ctx: { params?: { id?: string } }) {
   return NextResponse.json({ transaction: data });
 }
 
-export async function DELETE(req: Request, ctx: { params?: { id?: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
   const ctxAuth = await getAuthContext();
   if ("error" in ctxAuth) return ctxAuth.error;
 
@@ -385,7 +400,7 @@ export async function DELETE(req: Request, ctx: { params?: { id?: string } }) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  const requestedId = getRequestedId(req, ctx.params);
+  const requestedId = getRequestedId(req, { id });
   if (!requestedId || !isUuid(requestedId)) {
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }

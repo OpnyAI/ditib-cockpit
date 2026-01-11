@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+// src/app/api/finance/accounts/[id]/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerReadClient } from "@/lib/supabase/server-read";
 
@@ -66,9 +67,11 @@ function canWrite(role: Role) {
 }
 
 export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   const ctx = await getAuthContext();
   if ("error" in ctx) return ctx.error;
 
@@ -84,7 +87,7 @@ export async function GET(
       "id, tenant_id, name, currency, opening_balance_cents, is_archived, created_at, updated_at"
     )
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error) {
@@ -95,9 +98,11 @@ export async function GET(
 }
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   const ctx = await getAuthContext();
   if ("error" in ctx) return ctx.error;
 
@@ -153,7 +158,7 @@ export async function PATCH(
     .from("finance_accounts")
     .update(patch)
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id)
+    .eq("id", id)
     .select(
       "id, tenant_id, name, currency, opening_balance_cents, is_archived, created_at, updated_at"
     )
@@ -167,9 +172,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   const ctx = await getAuthContext();
   if ("error" in ctx) return ctx.error;
 
@@ -184,7 +191,7 @@ export async function DELETE(
     .from("finance_accounts")
     .update({ is_archived: true })
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id)
+    .eq("id", id)
     .select(
       "id, tenant_id, name, currency, opening_balance_cents, is_archived, created_at, updated_at"
     )

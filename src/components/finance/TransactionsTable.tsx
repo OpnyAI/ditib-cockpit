@@ -5,6 +5,8 @@ import * as React from "react";
 import type { Account, Category, Transaction, TxType } from "./finance.types";
 import { formatEURFromCents } from "./finance.utils";
 
+const UNCATEGORIZED_ID = "__uncategorized__";
+
 export function TransactionsTable({
   monthKey,
   monthTx,
@@ -44,15 +46,24 @@ export function TransactionsTable({
 
     if (!showArchived) tx = tx.filter((t) => !t.is_archived);
     if (typeFilter !== "ALL") tx = tx.filter((t) => t.type === typeFilter);
-    if (accountFilter !== "ALL")
+
+    if (accountFilter !== "ALL") {
       tx = tx.filter((t) => t.account_id === accountFilter);
-    if (categoryFilter !== "ALL")
-      tx = tx.filter((t) => t.category_id === categoryFilter);
+    }
+
+    if (categoryFilter !== "ALL") {
+      tx = tx.filter((t) => {
+        const categoryId = t.category_id ?? UNCATEGORIZED_ID;
+        return categoryId === categoryFilter;
+      });
+    }
 
     if (query) {
       tx = tx.filter((t) => {
         const a = accountNameById.get(t.account_id) ?? "";
-        const c = categoryNameById.get(t.category_id) ?? "";
+        const categoryId = t.category_id ?? UNCATEGORIZED_ID;
+        const c = categoryNameById.get(categoryId) ?? "Ohne Kategorie";
+
         const s = [
           t.booking_date,
           t.type,
@@ -65,6 +76,7 @@ export function TransactionsTable({
         ]
           .join(" ")
           .toLowerCase();
+
         return s.includes(query);
       });
     }
@@ -203,6 +215,7 @@ export function TransactionsTable({
           className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
         >
           <option value="ALL">Kategorie: Alle</option>
+          <option value={UNCATEGORIZED_ID}>Ohne Kategorie</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -282,6 +295,7 @@ export function TransactionsTable({
                 className="h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
               >
                 <option value="ALL">Kategorie: Alle</option>
+                <option value={UNCATEGORIZED_ID}>Ohne Kategorie</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -322,8 +336,11 @@ export function TransactionsTable({
             {rows.map((t) => {
               const isExpense = t.type === "EXPENSE";
               const title = t.memo || t.counterparty || "Buchung";
+
+              const categoryId = t.category_id ?? UNCATEGORIZED_ID;
               const category =
-                categoryNameById.get(t.category_id) ?? "Kategorie";
+                categoryNameById.get(categoryId) ?? "Ohne Kategorie";
+
               const account = accountNameById.get(t.account_id) ?? "Konto";
               const isOpen = expandedId === t.id;
 
@@ -474,8 +491,11 @@ export function TransactionsTable({
             {rows.map((t) => {
               const isExpense = t.type === "EXPENSE";
               const title = t.memo || t.counterparty || "Buchung";
+
+              const categoryId = t.category_id ?? UNCATEGORIZED_ID;
               const category =
-                categoryNameById.get(t.category_id) ?? "Kategorie";
+                categoryNameById.get(categoryId) ?? "Ohne Kategorie";
+
               const account = accountNameById.get(t.account_id) ?? "Konto";
 
               return (

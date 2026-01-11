@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+// src/app/api/finance/categories/[id]/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServerReadClient } from "@/lib/supabase/server-read";
 
@@ -9,10 +10,7 @@ type CategoryType = "INCOME" | "EXPENSE";
 
 function getAdminClient() {
   const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-      ? process.env.NEXT_PUBLIC_SUPABASE_URL
-      : process.env.SUPABASE_URL || "";
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
   if (!url || !serviceKey) {
@@ -70,9 +68,11 @@ function canWrite(role: Role) {
 }
 
 export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   const ctx = await getAuthContext();
   if ("error" in ctx) return ctx.error;
 
@@ -88,7 +88,7 @@ export async function GET(
       "id, tenant_id, type, name, sort_order, is_archived, created_by, updated_by, created_at, updated_at"
     )
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !data) {
@@ -99,9 +99,11 @@ export async function GET(
 }
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   const ctx = await getAuthContext();
   if ("error" in ctx) return ctx.error;
 
@@ -162,7 +164,7 @@ export async function PATCH(
     .from("finance_categories")
     .update(patch)
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id)
+    .eq("id", id)
     .select(
       "id, tenant_id, type, name, sort_order, is_archived, created_by, updated_by, created_at, updated_at"
     )
@@ -179,9 +181,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
+
   const ctx = await getAuthContext();
   if ("error" in ctx) return ctx.error;
 
@@ -196,7 +200,7 @@ export async function DELETE(
     .from("finance_categories")
     .update({ is_archived: true, updated_by: ctx.userId }) // ✅ Audit Actor
     .eq("tenant_id", ctx.tenantId)
-    .eq("id", params.id)
+    .eq("id", id)
     .select(
       "id, tenant_id, type, name, sort_order, is_archived, created_by, updated_by, created_at, updated_at"
     )
