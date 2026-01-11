@@ -15,17 +15,22 @@ export type Category = {
 
 export type Transaction = {
   id: string;
-  booking_date: string;
+
+  booking_date: string; // YYYY-MM-DD
   type: TxType;
   amount_cents: number;
+
   account_id: string;
-  category_id: string | null; // ✅ Backend erlaubt null
+  category_id: string | null;
+
   counterparty: string | null;
   memo: string | null;
   reference: string | null;
 
-  is_archived: boolean; // ✅ nicht optional, weil Backend immer liefert (und UI darauf baut)
-  created_at?: string; // UI braucht das nicht zwingend, optional ok
+  is_archived: boolean;
+
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type HintTone = "neutral" | "warn" | "info";
