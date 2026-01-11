@@ -1,18 +1,43 @@
 // src/components/shell/UserMenu.tsx
 "use client";
 
-/**
- * Minimaler Build-Fix:
- * - MobileNav importiert { UserMenu } (named export)
- * - Diese Datei hatte keine Exports -> Build Error
- *
- * WICHTIG:
- * - Kein Design/Markup wird verändert, weil wir hier bewusst nichts rendern.
- * - Funktionalität können wir im nächsten Schritt sauber implementieren,
- *   sobald wir den gewünschten UserMenu-UX definieren oder den alten Stand wiederherstellen.
- */
-export function UserMenu() {
-  return null;
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+type Props = {
+  fullWidth?: boolean;
+};
+
+export function UserMenu({ fullWidth }: Props) {
+  const router = useRouter();
+  const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
+
+  async function onLogout() {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      // Nach Logout sauber raus. (Login-Route existiert in eurem Setup)
+      router.push("/login");
+      router.refresh();
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onLogout}
+      className={[
+        // Nutzt eure bestehenden "ui"-Klassen (Design bleibt konsistent).
+        "ui-btn ui-btn-ghost h-11",
+        fullWidth ? "w-full justify-between" : "",
+      ].join(" ")}
+      aria-label="Abmelden"
+    >
+      <span className="text-sm font-medium">Abmelden</span>
+      <span className="ui-row-chevron">›</span>
+    </button>
+  );
 }
 
 export default UserMenu;
