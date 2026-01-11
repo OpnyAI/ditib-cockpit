@@ -14,27 +14,28 @@ const NAV = [
 
 const ADMIN_NAV = [{ href: "/app/admin/requests", label: "Join Requests" }];
 
-function isActive(pathname: string | null, href: string) {
-  if (!pathname) return false;
-  if (href === "/app") return pathname === "/app";
-  return pathname.startsWith(href);
-}
-
 export function Sidebar({ profile }: { profile: Profile }) {
   const pathname = usePathname();
-  const isAdmin = profile.role === "ADMIN";
+
+  // Defensive (falls irgendwo kurz undefined reinkommt – verhindert Crashes)
+  const role = profile?.role ?? "MITARBEITER";
+  const isAdmin = role === "ADMIN";
 
   return (
     <nav className="ui-card p-3">
       <div className="space-y-1">
         {NAV.map((item) => {
-          const active = isActive(pathname, item.href);
+          const active =
+            item.href === "/app"
+              ? pathname === "/app"
+              : pathname?.startsWith(item.href);
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={[
+                // WICHTIG: block + flex + padding => kein “zusammenkleben”
                 "group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm",
                 "transition-colors",
                 "hover:bg-[rgb(var(--surface-2))]/60",
@@ -59,17 +60,15 @@ export function Sidebar({ profile }: { profile: Profile }) {
         })}
       </div>
 
+      {/* Admin-Bereich nur für ADMIN */}
       {isAdmin ? (
         <>
-          <div className="my-3 h-px w-full bg-[rgb(var(--border))]/60" />
+          <div className="mt-4 h-px w-full bg-[rgb(var(--border))]/60" />
+          <div className="mt-3 text-xs ui-muted leading-5">Admin</div>
 
-          <div className="px-1 pb-2 pt-1">
-            <div className="text-[12px] tracking-wide ui-muted">Admin</div>
-          </div>
-
-          <div className="space-y-1">
+          <div className="mt-2 space-y-1">
             {ADMIN_NAV.map((item) => {
-              const active = isActive(pathname, item.href);
+              const active = pathname?.startsWith(item.href);
 
               return (
                 <Link
@@ -102,8 +101,8 @@ export function Sidebar({ profile }: { profile: Profile }) {
         </>
       ) : null}
 
-      {/* subtiler Footer-Spacer, damit es nicht so “abgeschnitten” wirkt */}
-      <div className="mt-3 h-px w-full bg-[rgb(var(--border))]/60" />
+      {/* subtiler Footer-Spacer */}
+      <div className="mt-4 h-px w-full bg-[rgb(var(--border))]/60" />
       <div className="mt-3 text-xs ui-muted leading-5">
         Schnellzugriff auf Module
       </div>

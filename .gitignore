@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# archives / dumps
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+
+# local workspace artifacts
+.ditib_cookie
+project-structure.txt
+project_dump.zip
+ditib-cockpit-code/

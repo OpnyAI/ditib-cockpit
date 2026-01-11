@@ -30,7 +30,8 @@ export function ThemeToggle({ fullWidth }: { fullWidth?: boolean }) {
   }, []);
 
   const label = useMemo(() => {
-    return theme === "dark" ? "🌙 Dark Mode" : "☀️ Light Mode";
+    // Desktop: kurz & clean, Mobile: Icon-only (wenn nicht fullWidth)
+    return theme === "dark" ? "Dark" : "Light";
   }, [theme]);
 
   const toggle = () => {
@@ -45,12 +46,20 @@ export function ThemeToggle({ fullWidth }: { fullWidth?: boolean }) {
       type="button"
       onClick={toggle}
       className={[
-        "ui-btn h-10",
-        fullWidth ? "w-full justify-center" : "px-4",
+        // kompakter System-Button
+        "ui-btn ui-btn-ghost h-9 rounded-xl",
+        // padding abhängig von Kontext
+        fullWidth ? "w-full justify-center px-3" : "px-3",
       ].join(" ")}
       aria-label="Theme wechseln"
+      title="Theme wechseln"
     >
-      {label}
+      <span className="text-[15px] leading-none" aria-hidden>
+        {theme === "dark" ? "🌙" : "☀️"}
+      </span>
+
+      {/* In der Topbar (fullWidth=false) lassen wir Text bewusst kurz */}
+      <span className={fullWidth ? "" : "hidden sm:inline"}>{label}</span>
     </button>
   );
 }
