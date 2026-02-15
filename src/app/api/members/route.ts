@@ -44,7 +44,10 @@ async function getAuthContext() {
 
   if (userErr || !user) {
     return {
-      error: NextResponse.json({ error: "Nicht eingeloggt." }, { status: 401 }),
+      error: NextResponse.json(
+        { error: "Nicht eingeloggt." },
+        { status: 401 }
+      ),
     };
   }
 
@@ -58,7 +61,7 @@ async function getAuthContext() {
     return {
       error: NextResponse.json(
         { error: "Profil konnte nicht geladen werden." },
-        { status: 403 },
+        { status: 403 }
       ),
     };
   }
@@ -67,7 +70,7 @@ async function getAuthContext() {
     return {
       error: NextResponse.json(
         { error: "Kein Tenant im Profil gesetzt." },
-        { status: 403 },
+        { status: 403 }
       ),
     };
   }
@@ -85,9 +88,8 @@ export async function GET(req: Request) {
   let query = ctx.supabase
     .from("tenant_members")
     .select(
-      "id, tenant_id, full_name, function_title, email, phone, notes, is_active, created_at, updated_at, created_by, updated_by",
+      "id, tenant_id, full_name, function_title, email, phone, notes, is_active, created_at, updated_at, created_by, updated_by"
     )
-    // ✅ CRITICAL: Tenant-Scoping
     .eq("tenant_id", ctx.profile.tenant_id)
     .order("full_name", { ascending: true });
 
@@ -100,7 +102,7 @@ export async function GET(req: Request) {
   if (error) {
     return NextResponse.json(
       { error: `Mitglieder konnten nicht geladen werden: ${error.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -114,7 +116,7 @@ export async function POST(req: Request) {
   if (!canManageMembers(ctx.profile)) {
     return NextResponse.json(
       { error: "Keine Berechtigung zum Erstellen von Mitgliedern." },
-      { status: 403 },
+      { status: 403 }
     );
   }
 
@@ -136,14 +138,14 @@ export async function POST(req: Request) {
   if (full_name.length < 2) {
     return NextResponse.json(
       { error: "Bitte einen gültigen Namen eingeben (mindestens 2 Zeichen)." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   if (email && !EMAIL_REGEX.test(email)) {
     return NextResponse.json(
       { error: "Bitte eine gültige E-Mail-Adresse eingeben." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -161,7 +163,7 @@ export async function POST(req: Request) {
       updated_by: ctx.userId,
     })
     .select(
-      "id, tenant_id, full_name, function_title, email, phone, notes, is_active, created_at, updated_at, created_by, updated_by",
+      "id, tenant_id, full_name, function_title, email, phone, notes, is_active, created_at, updated_at, created_by, updated_by"
     )
     .single();
 
@@ -172,7 +174,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { error: `Mitglied konnte nicht erstellt werden: ${error.message}` },
-      { status },
+      { status }
     );
   }
 
