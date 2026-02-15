@@ -80,7 +80,7 @@ export function CreateTransactionModal({
 
     setSaving(true);
     try {
-      const payload: any = {
+      const payload: Record<string, string | number | null> = {
         type,
         booking_date: bookingDate,
         bookingDate,

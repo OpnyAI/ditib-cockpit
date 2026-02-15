@@ -108,18 +108,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
 
-  const type = body?.type as CategoryType;
-  const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const sortOrder = Number.isFinite(body?.sortOrder)
-    ? Number(body.sortOrder)
-    : 0;
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+  }
+  const b = body as Record<string, unknown>;
+
+  const type = b.type as CategoryType;
+  const name = typeof b.name === "string" ? b.name.trim() : "";
+  const sortOrder =
+    typeof b.sortOrder === "number" && Number.isFinite(b.sortOrder)
+      ? Number(b.sortOrder)
+      : 0;
 
   if (type !== "INCOME" && type !== "EXPENSE") {
     return NextResponse.json({ error: "TYPE_INVALID" }, { status: 400 });

@@ -66,6 +66,13 @@ function canWrite(role: Role) {
   return role === "ADMIN" || role === "KASSIERER";
 }
 
+type AccountPatch = {
+  name?: string;
+  currency?: string;
+  is_archived?: boolean;
+  opening_balance_cents?: number;
+};
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -110,35 +117,39 @@ export async function PATCH(
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
 
-  const patch: Record<string, any> = {};
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+  }
+  const b = body as Record<string, unknown>;
+  const patch: AccountPatch = {};
 
-  if (typeof body?.name === "string") {
-    const name = body.name.trim();
+  if (typeof b.name === "string") {
+    const name = b.name.trim();
     if (!name)
       return NextResponse.json({ error: "NAME_REQUIRED" }, { status: 400 });
     patch.name = name;
   }
 
-  if (typeof body?.currency === "string") {
-    const currency = body.currency.trim();
+  if (typeof b.currency === "string") {
+    const currency = b.currency.trim();
     if (!currency)
       return NextResponse.json({ error: "CURRENCY_INVALID" }, { status: 400 });
     patch.currency = currency;
   }
 
-  if (typeof body?.is_archived === "boolean") {
-    patch.is_archived = body.is_archived;
+  if (typeof b.is_archived === "boolean") {
+    patch.is_archived = b.is_archived;
   }
 
-  if (body?.openingBalanceCents !== undefined) {
-    const v = Number(body.openingBalanceCents);
+  if (b.openingBalanceCents !== undefined) {
+    const v = Number(b.openingBalanceCents);
     if (!Number.isInteger(v)) {
       return NextResponse.json(
         { error: "OPENING_BALANCE_MUST_BE_INTEGER_CENTS" },

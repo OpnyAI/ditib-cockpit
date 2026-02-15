@@ -78,6 +78,21 @@ function isUuid(s: string) {
   );
 }
 
+type TxPatch = {
+  is_archived?: boolean;
+  archived_at?: string | null;
+  archived_by?: string | null;
+  type?: TxType;
+  booking_date?: string;
+  amount_cents?: number;
+  account_id?: string;
+  category_id?: string | null;
+  counterparty?: string | null;
+  memo?: string | null;
+  reference?: string | null;
+  updated_by?: string;
+};
+
 /**
  * ✅ IMPORTANT:
  * In deiner Umgebung kommt params.id offenbar leer an.
@@ -156,7 +171,7 @@ export async function GET(
         .from("finance_transactions")
         .select("id, tenant_id, is_archived")
         .eq("id", requestedId)
-        .maybeSingle();
+        .maybeSingle<{ id: string; tenant_id: string; is_archived: boolean }>();
 
       return NextResponse.json(
         {
@@ -208,12 +223,17 @@ export async function PATCH(
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
+
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+  }
+  const b = body as Record<string, unknown>;
 
   const admin = getAdminClient();
 
@@ -223,16 +243,16 @@ export async function PATCH(
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
-  const patch: Record<string, any> = {};
+  const patch: TxPatch = {};
 
   /**
    * ✅ Soft-Archive Toggle (UI-friendly)
    * - allow unarchive even if currently archived
    * - block editing other fields when archived (keeps integrity)
    */
-  if (body?.isArchived !== undefined) {
+  if (b.isArchived !== undefined) {
     const isArchived =
-      typeof body.isArchived === "boolean" ? body.isArchived : null;
+      typeof b.isArchived === "boolean" ? b.isArchived : null;
 
     if (isArchived === null) {
       return NextResponse.json(
@@ -254,23 +274,23 @@ export async function PATCH(
 
   // If archived and request is NOT an unarchive toggle → block
   if (existing.is_archived) {
-    const isUnarchiveRequest = body?.isArchived === false;
+    const isUnarchiveRequest = b.isArchived === false;
     if (!isUnarchiveRequest) {
       return NextResponse.json({ error: "ARCHIVED" }, { status: 409 });
     }
   }
 
-  if (body?.type !== undefined) {
-    const type = body.type as TxType;
+  if (b.type !== undefined) {
+    const type = b.type as TxType;
     if (type !== "INCOME" && type !== "EXPENSE") {
       return NextResponse.json({ error: "TYPE_INVALID" }, { status: 400 });
     }
     patch.type = type;
   }
 
-  if (body?.bookingDate !== undefined) {
+  if (b.bookingDate !== undefined) {
     const bookingDate =
-      typeof body.bookingDate === "string" ? body.bookingDate.trim() : "";
+      typeof b.bookingDate === "string" ? b.bookingDate.trim() : "";
     if (!bookingDate || !isValidDateYYYYMMDD(bookingDate)) {
       return NextResponse.json(
         { error: "BOOKING_DATE_INVALID" },
@@ -280,8 +300,8 @@ export async function PATCH(
     patch.booking_date = bookingDate;
   }
 
-  if (body?.amountCents !== undefined) {
-    const amountCents = Number(body.amountCents);
+  if (b.amountCents !== undefined) {
+    const amountCents = Number(b.amountCents);
     if (!Number.isInteger(amountCents) || amountCents <= 0) {
       return NextResponse.json(
         { error: "AMOUNT_CENTS_INVALID" },
@@ -291,8 +311,8 @@ export async function PATCH(
     patch.amount_cents = amountCents;
   }
 
-  if (body?.accountId !== undefined) {
-    const accountId = typeof body.accountId === "string" ? body.accountId : "";
+  if (b.accountId !== undefined) {
+    const accountId = typeof b.accountId === "string" ? b.accountId : "";
     if (!accountId) {
       return NextResponse.json(
         { error: "ACCOUNT_ID_REQUIRED" },
@@ -302,30 +322,30 @@ export async function PATCH(
     patch.account_id = accountId;
   }
 
-  if (body?.categoryId !== undefined) {
+  if (b.categoryId !== undefined) {
     const categoryId =
-      typeof body.categoryId === "string" ? body.categoryId : null;
+      typeof b.categoryId === "string" ? b.categoryId : null;
     patch.category_id = categoryId;
   }
 
-  if (body?.counterparty !== undefined) {
+  if (b.counterparty !== undefined) {
     patch.counterparty =
-      typeof body.counterparty === "string" && body.counterparty.trim()
-        ? body.counterparty.trim()
+      typeof b.counterparty === "string" && b.counterparty.trim()
+        ? b.counterparty.trim()
         : null;
   }
 
-  if (body?.memo !== undefined) {
+  if (b.memo !== undefined) {
     patch.memo =
-      typeof body.memo === "string" && body.memo.trim()
-        ? body.memo.trim()
+      typeof b.memo === "string" && b.memo.trim()
+        ? b.memo.trim()
         : null;
   }
 
-  if (body?.reference !== undefined) {
+  if (b.reference !== undefined) {
     patch.reference =
-      typeof body.reference === "string" && body.reference.trim()
-        ? body.reference.trim()
+      typeof b.reference === "string" && b.reference.trim()
+        ? b.reference.trim()
         : null;
   }
 

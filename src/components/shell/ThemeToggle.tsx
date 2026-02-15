@@ -21,13 +21,14 @@ function applyTheme(theme: "dark" | "light") {
 }
 
 export function ThemeToggle({ fullWidth }: { fullWidth?: boolean }) {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">(() =>
+    getInitialTheme()
+  );
 
   useEffect(() => {
-    const t = getInitialTheme();
-    setTheme(t);
-    applyTheme(t);
-  }, []);
+    applyTheme(theme);
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
 
   const label = useMemo(() => {
     // Desktop: kurz & clean, Mobile: Icon-only (wenn nicht fullWidth)
@@ -37,8 +38,6 @@ export function ThemeToggle({ fullWidth }: { fullWidth?: boolean }) {
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    window.localStorage.setItem("theme", next);
-    applyTheme(next);
   };
 
   return (

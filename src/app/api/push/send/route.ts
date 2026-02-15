@@ -5,12 +5,6 @@ import { sendPushToUser } from "@/lib/push/send";
 
 export const runtime = "nodejs";
 
-type Body = {
-  title: string;
-  body: string;
-  url?: string;
-};
-
 export async function POST(req: Request) {
   try {
     const supabase = await createSupabaseServerReadClient();
@@ -33,24 +27,27 @@ export async function POST(req: Request) {
     }
 
     // Body
-    const body = (await req.json()) as Body;
-    if (!body?.title || !body?.body) {
+    const rawBody: unknown = await req.json();
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+    const body = rawBody as Record<string, unknown>;
+    const title = typeof body.title === "string" ? body.title : "";
+    const message = typeof body.body === "string" ? body.body : "";
+    const url = typeof body.url === "string" ? body.url : "/app";
+
+    if (!title || !message) {
       return NextResponse.json(
         { error: "Missing title/body" },
         { status: 400 }
       );
     }
 
-    const result = await sendPushToUser(
-      supabase as any,
-      tenantId,
-      userData.user.id,
-      {
-        title: body.title,
-        body: body.body,
-        url: body.url || "/app",
-      }
-    );
+    const result = await sendPushToUser(supabase, tenantId, userData.user.id, {
+      title,
+      body: message,
+      url,
+    });
 
     if (!result.ok) {
       return NextResponse.json(
@@ -60,9 +57,9 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, results: result.results });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json(
-      { ok: false, error: e?.message || "Unknown error" },
+      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
       { status: 500 }
     );
   }

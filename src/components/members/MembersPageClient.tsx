@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { CSVImportModal } from "@/components/members/CSVImportModal";
 
 type Member = {
   id: string;
@@ -53,6 +54,7 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
   const [onlyActive, setOnlyActive] = React.useState(true);
 
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [csvModalOpen, setCsvModalOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Member | null>(null);
   const [form, setForm] = React.useState<MemberFormState>(toFormState());
   const [saving, setSaving] = React.useState(false);
@@ -228,13 +230,22 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
               Nur aktiv
             </label>
             {canManage ? (
-              <button
-                type="button"
-                onClick={openCreateModal}
-                className="ui-btn ui-btn-primary h-11 px-4 text-sm"
-              >
-                Mitglied hinzufügen
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setCsvModalOpen(true)}
+                  className="ui-btn h-11 px-4 text-sm"
+                >
+                  Mitglieder per CSV importieren
+                </button>
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="ui-btn ui-btn-primary h-11 px-4 text-sm"
+                >
+                  Mitglied hinzufügen
+                </button>
+              </>
             ) : null}
           </div>
         </div>
@@ -502,6 +513,15 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
           </div>
         </div>
       ) : null}
+
+      <CSVImportModal
+        open={csvModalOpen}
+        onClose={() => setCsvModalOpen(false)}
+        onImported={async () => {
+          router.refresh();
+          await loadMembers();
+        }}
+      />
     </div>
   );
 }

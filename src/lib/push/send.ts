@@ -1,5 +1,5 @@
 // src/lib/push/send.ts
-import webpush from "web-push";
+import webpush, { type PushSubscription } from "web-push";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type PushPayload = {
@@ -66,7 +66,10 @@ export async function sendPushToUser(
     };
 
     try {
-      await webpush.sendNotification(subscription as any, webpushPayload);
+      await webpush.sendNotification(
+        subscription as unknown as PushSubscription,
+        webpushPayload
+      );
 
       await supabase
         .from("push_subscriptions")
@@ -74,8 +77,17 @@ export async function sendPushToUser(
         .eq("id", s.id);
 
       results.push({ id: s.id, ok: true });
-    } catch (err: any) {
-      const statusCode = err?.statusCode ?? err?.status ?? null;
+    } catch (err: unknown) {
+      const errObj =
+        typeof err === "object" && err !== null
+          ? (err as Record<string, unknown>)
+          : {};
+      const statusCode =
+        typeof errObj.statusCode === "number"
+          ? errObj.statusCode
+          : typeof errObj.status === "number"
+          ? errObj.status
+          : null;
 
       if (statusCode === 404 || statusCode === 410) {
         await supabase.from("push_subscriptions").delete().eq("id", s.id);
@@ -85,7 +97,12 @@ export async function sendPushToUser(
         id: s.id,
         ok: false,
         statusCode,
-        message: err?.body || err?.message || "send failed",
+        message:
+          typeof errObj.body === "string"
+            ? errObj.body
+            : typeof errObj.message === "string"
+            ? errObj.message
+            : "send failed",
       });
     }
   }

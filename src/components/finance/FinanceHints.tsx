@@ -15,24 +15,24 @@ export function FinanceHints({
   monthIndex0: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+    <div className="ui-card p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-white/90">Hinweise</div>
-          <div className="mt-1 text-xs text-white/55">
+          <div className="text-sm font-semibold">Hinweise</div>
+          <div className="mt-1 text-xs ui-muted">
             Automatisch – regelbasiert, ohne KI.
           </div>
         </div>
-        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
+        <div className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 py-1 text-xs ui-muted">
           {uiHints.length} aktiv
         </div>
       </div>
 
       <div className="mt-4 space-y-2">
         {uiHints.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-black/10 px-3 py-3 text-sm text-white/70">
+          <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 py-3 text-sm">
             Sieht sauber aus – keine Hinweise für{" "}
-            <span className="text-white/85">
+            <span className="font-medium">
               {monthLabelDE(year, monthIndex0)}
             </span>
             .
@@ -41,13 +41,13 @@ export function FinanceHints({
           uiHints.map((h) => {
             const toneCls =
               h.tone === "warn"
-                ? "border-rose-500/20 bg-rose-500/10 text-rose-100"
+                ? "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-200"
                 : h.tone === "info"
-                ? "border-white/10 bg-black/10 text-white/80"
-                : "border-white/10 bg-white/5 text-white/80";
+                ? "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70"
+                : "border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/55";
 
             const titleCls =
-              h.tone === "warn" ? "text-rose-100" : "text-white/85";
+              h.tone === "warn" ? "text-rose-700 dark:text-rose-200" : "";
 
             return (
               <div
@@ -57,14 +57,14 @@ export function FinanceHints({
                 <div className={`text-sm font-medium ${titleCls}`}>
                   {h.title}
                 </div>
-                <div className="mt-1 text-xs text-white/65">{h.body}</div>
+                <div className="mt-1 text-xs ui-muted">{h.body}</div>
               </div>
             );
           })
         )}
       </div>
 
-      <div className="mt-4 rounded-xl border border-white/10 bg-black/10 p-3 text-xs text-white/60">
+      <div className="mt-4 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/65 p-3 text-xs ui-muted">
         Tipp: Die Buchungen-Liste unten ist deine Arbeitsfläche (Suchen /
         Filtern / Archivieren).
       </div>

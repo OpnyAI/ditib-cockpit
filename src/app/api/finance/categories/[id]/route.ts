@@ -67,6 +67,14 @@ function canWrite(role: Role) {
   return role === "ADMIN" || role === "KASSIERER";
 }
 
+type CategoryPatch = {
+  type?: CategoryType;
+  name?: string;
+  sort_order?: number;
+  is_archived?: boolean;
+  updated_by?: string;
+};
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -111,33 +119,37 @@ export async function PATCH(
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
 
-  const patch: Record<string, any> = {};
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+  }
+  const b = body as Record<string, unknown>;
+  const patch: CategoryPatch = {};
 
-  if (body?.type !== undefined) {
-    const type = body.type as CategoryType;
+  if (b.type !== undefined) {
+    const type = b.type as CategoryType;
     if (type !== "INCOME" && type !== "EXPENSE") {
       return NextResponse.json({ error: "TYPE_INVALID" }, { status: 400 });
     }
     patch.type = type;
   }
 
-  if (typeof body?.name === "string") {
-    const name = body.name.trim();
+  if (typeof b.name === "string") {
+    const name = b.name.trim();
     if (!name) {
       return NextResponse.json({ error: "NAME_REQUIRED" }, { status: 400 });
     }
     patch.name = name;
   }
 
-  if (body?.sortOrder !== undefined) {
-    const v = Number(body.sortOrder);
+  if (b.sortOrder !== undefined) {
+    const v = Number(b.sortOrder);
     if (!Number.isInteger(v)) {
       return NextResponse.json(
         { error: "SORT_ORDER_MUST_BE_INT" },
@@ -147,8 +159,8 @@ export async function PATCH(
     patch.sort_order = v;
   }
 
-  if (typeof body?.is_archived === "boolean") {
-    patch.is_archived = body.is_archived;
+  if (typeof b.is_archived === "boolean") {
+    patch.is_archived = b.is_archived;
   }
 
   if (Object.keys(patch).length === 0) {

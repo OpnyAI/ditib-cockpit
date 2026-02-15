@@ -180,9 +180,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(
-      { error: e?.message ?? "Unknown error" },
+      { error: message },
       { status: 500 }
     );
   }

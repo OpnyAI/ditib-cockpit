@@ -161,26 +161,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
 
-  const type = body?.type as TxType;
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+  }
+  const b = body as Record<string, unknown>;
+
+  const type = b.type as TxType;
   const bookingDate =
-    typeof body?.bookingDate === "string" ? body.bookingDate.trim() : "";
-  const amountCents = Number(body?.amountCents);
-  const accountId = typeof body?.accountId === "string" ? body.accountId : "";
+    typeof b.bookingDate === "string" ? b.bookingDate.trim() : "";
+  const amountCents = Number(b.amountCents);
+  const accountId = typeof b.accountId === "string" ? b.accountId : "";
   const categoryId =
-    typeof body?.categoryId === "string" ? body.categoryId : null;
+    typeof b.categoryId === "string" ? b.categoryId : null;
 
   const counterparty =
-    typeof body?.counterparty === "string" ? body.counterparty.trim() : null;
-  const memo = typeof body?.memo === "string" ? body.memo.trim() : null;
+    typeof b.counterparty === "string" ? b.counterparty.trim() : null;
+  const memo = typeof b.memo === "string" ? b.memo.trim() : null;
   const reference =
-    typeof body?.reference === "string" ? body.reference.trim() : null;
+    typeof b.reference === "string" ? b.reference.trim() : null;
 
   if (type !== "INCOME" && type !== "EXPENSE") {
     return NextResponse.json({ error: "TYPE_INVALID" }, { status: 400 });

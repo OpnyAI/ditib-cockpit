@@ -9,8 +9,6 @@ import {
   toInputMonthValue,
   csvEscape,
   downloadTextFile,
-  formatEURFromCents,
-  monthLabelDE,
 } from "./finance.utils";
 import { TransactionsTable } from "./TransactionsTable";
 import { CreateTransactionModal } from "./CreateTransactionModal";
@@ -376,7 +374,7 @@ export default function FinanceDashboardPage() {
     <div className="w-full">
       {toast && (
         <div className="fixed bottom-5 right-5 z-[200]">
-          <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-sm text-white/85 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur">
+          <div className="ui-card border-[rgb(var(--border))] bg-[rgb(var(--surface))]/95 px-4 py-3 text-sm shadow-[0_12px_40px_rgba(0,0,0,0.2)] backdrop-blur">
             {toast}
           </div>
         </div>
@@ -415,7 +413,7 @@ export default function FinanceDashboardPage() {
         <FinanceHints uiHints={uiHints} year={year} monthIndex0={monthIndex0} />
       </div>
 
-      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+      <div className="ui-card mt-4 p-5">
         <TransactionsTable
           monthKey={selectedMonthKey}
           monthTx={monthTx}
@@ -445,7 +443,7 @@ export default function FinanceDashboardPage() {
 
       {loading && (
         <div className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
-          <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-sm text-white/80 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur">
+          <div className="ui-card border-[rgb(var(--border))] bg-[rgb(var(--surface))]/95 px-4 py-3 text-sm shadow-[0_12px_40px_rgba(0,0,0,0.2)] backdrop-blur">
             Laden…
           </div>
         </div>

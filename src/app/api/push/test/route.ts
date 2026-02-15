@@ -29,16 +29,11 @@ export async function POST() {
       );
     }
 
-    const result = await sendPushToUser(
-      supabase as any,
-      tenantId,
-      userData.user.id,
-      {
-        title: "DITIB Cockpit",
-        body: "Test Push empfangen ✅",
-        url: "/app",
-      }
-    );
+    const result = await sendPushToUser(supabase, tenantId, userData.user.id, {
+      title: "DITIB Cockpit",
+      body: "Test Push empfangen ✅",
+      url: "/app",
+    });
 
     if (!result.ok) {
       return NextResponse.json(
@@ -48,9 +43,9 @@ export async function POST() {
     }
 
     return NextResponse.json({ ok: true, results: result.results });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json(
-      { ok: false, error: e?.message || "Unknown error" },
+      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
       { status: 500 }
     );
   }

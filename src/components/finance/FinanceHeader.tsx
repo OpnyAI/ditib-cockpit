@@ -36,20 +36,20 @@ export function FinanceHeader({
     <div className="mb-5 flex flex-col gap-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
         <div>
-          <div className="text-lg font-semibold text-white/90">Finanzen</div>
+          <div className="text-lg font-semibold">Finanzen</div>
         </div>
 
         {/* Desktop controls */}
         <div className="hidden items-center gap-2 md:flex">
-          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+          <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 py-2 text-xs ui-muted">
             Monat
           </div>
 
-          <div className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
+          <div className="flex h-10 items-center gap-2 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/75 px-3">
             <select
               value={monthIndex0}
               onChange={(e) => onChangeMonth(Number(e.target.value))}
-              className="h-10 bg-transparent text-sm text-white/85 outline-none"
+              className="h-10 bg-transparent text-sm outline-none"
               aria-label="Monat wählen"
             >
               {monthOptions.map((m) => (
@@ -59,12 +59,12 @@ export function FinanceHeader({
               ))}
             </select>
 
-            <div className="h-5 w-px bg-white/10" />
+            <div className="h-5 w-px bg-[rgb(var(--border))]" />
 
             <select
               value={year}
               onChange={(e) => onChangeYear(Number(e.target.value))}
-              className="h-10 bg-transparent text-sm text-white/85 outline-none"
+              className="h-10 bg-transparent text-sm outline-none"
               aria-label="Jahr wählen"
             >
               {yearOptions.map((y) => (
@@ -77,7 +77,7 @@ export function FinanceHeader({
 
           <button
             onClick={onRefresh}
-            className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15"
+            className="ui-btn h-10 px-3 text-sm"
           >
             {refreshing ? "..." : "Refresh"}
           </button>
@@ -92,14 +92,14 @@ export function FinanceHeader({
                 ? "CSV Export (aktueller Monat, inkl. Archiv)."
                 : "CSV Export (aktueller Monat, ohne Archiv)."
             }
-            className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+            className="ui-btn h-10 px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             CSV Export
           </button>
 
           <button
             onClick={onCreate}
-            className="h-10 rounded-xl bg-white/85 px-3 text-sm font-medium text-black hover:bg-white active:bg-white/90"
+            className="ui-btn ui-btn-primary h-10 px-3 text-sm font-medium"
           >
             + Buchung
           </button>
@@ -108,15 +108,15 @@ export function FinanceHeader({
         {/* Mobile controls */}
         <div className="md:hidden">
           <div className="flex items-center gap-2">
-            <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+            <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 py-2 text-xs ui-muted">
               Monat
             </div>
 
-            <div className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
+            <div className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/75 px-3">
               <select
                 value={monthIndex0}
                 onChange={(e) => onChangeMonth(Number(e.target.value))}
-                className="h-10 min-w-0 flex-1 bg-transparent text-sm text-white/85 outline-none"
+                className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none"
                 aria-label="Monat wählen"
               >
                 {monthOptions.map((m) => (
@@ -126,12 +126,12 @@ export function FinanceHeader({
                 ))}
               </select>
 
-              <div className="h-5 w-px bg-white/10" />
+              <div className="h-5 w-px bg-[rgb(var(--border))]" />
 
               <select
                 value={year}
                 onChange={(e) => onChangeYear(Number(e.target.value))}
-                className="h-10 bg-transparent text-sm text-white/85 outline-none"
+                className="h-10 bg-transparent text-sm outline-none"
                 aria-label="Jahr wählen"
               >
                 {yearOptions.map((y) => (
@@ -146,7 +146,7 @@ export function FinanceHeader({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               onClick={onRefresh}
-              className="h-11 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15"
+              className="ui-btn h-11 px-3 text-sm"
             >
               {refreshing ? "..." : "Refresh"}
             </button>
@@ -161,14 +161,14 @@ export function FinanceHeader({
                   ? "CSV Export (aktueller Monat, inkl. Archiv)."
                   : "CSV Export (aktueller Monat, ohne Archiv)."
               }
-              className="h-11 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+              className="ui-btn h-11 px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               CSV Export
             </button>
 
             <button
               onClick={onCreate}
-              className="col-span-2 h-11 rounded-xl bg-white/85 px-3 text-sm font-semibold text-black hover:bg-white active:bg-white/90"
+              className="ui-btn ui-btn-primary col-span-2 h-11 px-3 text-sm font-semibold"
             >
               + Buchung
             </button>
@@ -177,12 +177,12 @@ export function FinanceHeader({
       </div>
 
       <div className="flex items-center justify-end">
-        <label className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/70">
+        <label className="ui-btn flex h-10 items-center gap-2 px-3 text-sm">
           <input
             type="checkbox"
             checked={showArchived}
             onChange={(e) => onToggleArchived(e.target.checked)}
-            className="h-4 w-4 accent-white"
+            className="h-4 w-4"
           />
           Archiv anzeigen
         </label>

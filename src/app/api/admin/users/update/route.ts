@@ -87,9 +87,10 @@ export async function POST(req: Request) {
 
     // Redirect back to page
     return NextResponse.redirect(new URL("/app/admin/users", req.url), 303);
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(
-      { error: e?.message ?? "Unknown error" },
+      { error: message },
       { status: 500 }
     );
   }

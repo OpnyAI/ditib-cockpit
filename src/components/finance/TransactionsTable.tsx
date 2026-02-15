@@ -136,8 +136,8 @@ export function TransactionsTable({
     <div>
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="text-sm font-semibold text-white/90">Buchungen</div>
-          <div className="text-xs text-white/50">
+          <div className="text-sm font-semibold">Buchungen</div>
+          <div className="text-xs ui-muted">
             {monthKey} • {shownCount} von {totalCount} (Filter aktiv)
           </div>
         </div>
@@ -147,16 +147,16 @@ export function TransactionsTable({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Suche (Text, Kategorie, Konto, Referenz)…"
-            className="h-10 w-full sm:w-[320px] rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+            className="ui-input h-10 w-full sm:w-[320px]"
           />
 
           <div className="flex items-center gap-2">
-            <label className="flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/70">
+            <label className="ui-btn flex h-10 items-center gap-2 px-3 text-sm">
               <input
                 type="checkbox"
                 checked={showArchived}
                 onChange={(e) => onToggleArchived(e.target.checked)}
-                className="h-4 w-4 accent-white"
+                className="h-4 w-4 accent-[rgb(var(--text))]"
               />
               Archiv
             </label>
@@ -169,34 +169,34 @@ export function TransactionsTable({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Suche…"
-              className="h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+              className="ui-input h-10 w-full"
             />
 
             <button
               onClick={() => setMobileFiltersOpen(true)}
-              className="relative h-10 shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15"
+              className="ui-btn relative h-10 shrink-0 px-3 text-sm"
               aria-label="Filter öffnen"
             >
               Filter
               {activeFilterCount > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full border border-white/10 bg-white/10 px-1 text-[11px] text-white/85">
+                <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))] px-1 text-[11px]">
                   {activeFilterCount}
                 </span>
               )}
             </button>
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-xs text-white/55">
+          <div className="mt-2 flex items-center justify-between text-xs ui-muted">
             <div>
               {shownCount} Treffer
               {q.trim() ? (
-                <span className="text-white/35"> • Suche aktiv</span>
+                <span className="ui-muted"> • Suche aktiv</span>
               ) : null}
             </div>
             {activeFilterCount > 0 ? (
               <button
                 onClick={() => resetFilters()}
-                className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+                className="ui-btn h-7 rounded-lg px-2 py-1 text-xs ui-muted"
               >
                 Reset
               </button>
@@ -208,8 +208,8 @@ export function TransactionsTable({
       <div className="mt-3 hidden grid-cols-1 gap-2 md:grid md:grid-cols-4">
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as any)}
-          className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+          onChange={(e) => setTypeFilter(e.target.value as "ALL" | TxType)}
+          className="h-10 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 text-sm outline-none focus:border-[rgb(var(--ring))]"
         >
           <option value="ALL">Typ: Alle</option>
           <option value="EXPENSE">Typ: Ausgabe</option>
@@ -219,7 +219,7 @@ export function TransactionsTable({
         <select
           value={accountFilter}
           onChange={(e) => setAccountFilter(e.target.value)}
-          className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+          className="h-10 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 text-sm outline-none focus:border-[rgb(var(--ring))]"
         >
           <option value="ALL">Konto: Alle</option>
           {accounts.map((a) => (
@@ -232,7 +232,7 @@ export function TransactionsTable({
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+          className="h-10 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 text-sm outline-none focus:border-[rgb(var(--ring))]"
         >
           <option value="ALL">Kategorie: Alle</option>
           {categories.map((c) => (
@@ -244,7 +244,7 @@ export function TransactionsTable({
 
         <button
           onClick={() => resetFilters()}
-          className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15"
+          className="ui-btn h-10 px-3 text-sm"
         >
           Filter zurücksetzen
         </button>
@@ -256,39 +256,37 @@ export function TransactionsTable({
             className="absolute inset-0 bg-black/55 backdrop-blur-sm"
             onClick={() => setMobileFiltersOpen(false)}
           />
-          <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border border-white/10 bg-[#0b1220]/95 p-4 shadow-[0_-18px_80px_rgba(0,0,0,0.6)]">
+          <div className="ui-card absolute inset-x-0 bottom-0 rounded-t-3xl p-4 shadow-[0_-18px_80px_rgba(0,0,0,0.35)]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-white/90">
-                  Filter
-                </div>
-                <div className="mt-0.5 text-xs text-white/55">
+                <div className="text-sm font-semibold">Filter</div>
+                <div className="mt-0.5 text-xs ui-muted">
                   Optional – Suche bleibt oben immer verfügbar.
                 </div>
               </div>
               <button
                 onClick={() => setMobileFiltersOpen(false)}
-                className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/75 hover:bg-white/10"
+                className="ui-btn h-10 px-3 text-sm"
               >
                 Schließen
               </button>
             </div>
 
             <div className="mt-3 space-y-2">
-              <label className="flex h-10 items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/75">
+              <label className="flex h-10 items-center justify-between gap-3 rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 text-sm ui-muted">
                 <span>Archiv anzeigen</span>
                 <input
                   type="checkbox"
                   checked={showArchived}
                   onChange={(e) => onToggleArchived(e.target.checked)}
-                  className="h-4 w-4 accent-white"
+                  className="h-4 w-4 accent-[rgb(var(--text))]"
                 />
               </label>
 
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as any)}
-                className="h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+                onChange={(e) => setTypeFilter(e.target.value as "ALL" | TxType)}
+                className="h-10 w-full rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 text-sm outline-none focus:border-[rgb(var(--ring))]"
               >
                 <option value="ALL">Typ: Alle</option>
                 <option value="EXPENSE">Typ: Ausgabe</option>
@@ -298,7 +296,7 @@ export function TransactionsTable({
               <select
                 value={accountFilter}
                 onChange={(e) => setAccountFilter(e.target.value)}
-                className="h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+                className="h-10 w-full rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 text-sm outline-none focus:border-[rgb(var(--ring))]"
               >
                 <option value="ALL">Konto: Alle</option>
                 {accounts.map((a) => (
@@ -311,7 +309,7 @@ export function TransactionsTable({
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/85 outline-none focus:border-white/20"
+                className="h-10 w-full rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-3 text-sm outline-none focus:border-[rgb(var(--ring))]"
               >
                 <option value="ALL">Kategorie: Alle</option>
                 {categories.map((c) => (
@@ -324,20 +322,20 @@ export function TransactionsTable({
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   onClick={() => resetFilters()}
-                  className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15"
+                  className="ui-btn h-10 px-3 text-sm"
                 >
                   Reset
                 </button>
                 <button
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="h-10 rounded-xl bg-white/85 px-3 text-sm font-semibold text-black hover:bg-white active:bg-white/90"
+                  className="ui-btn ui-btn-primary h-10 px-3 text-sm font-semibold"
                 >
                   Anwenden
                 </button>
               </div>
             </div>
 
-            <div className="mt-3 text-xs text-white/45">
+            <div className="mt-3 text-xs ui-muted">
               Hinweis: Filter wirken nur auf den aktuell gewählten Monat.
             </div>
           </div>
@@ -347,7 +345,7 @@ export function TransactionsTable({
       {/* MOBILE */}
       <div className="mt-4 md:hidden">
         {rows.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-6 text-sm text-white/55">
+          <div className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/65 px-4 py-6 text-sm ui-muted">
             Keine Treffer für deine Filter/Suche.
           </div>
         ) : (
@@ -362,30 +360,30 @@ export function TransactionsTable({
               const isOpen = expandedId === t.id;
 
               const chipCls = isExpense
-                ? "border-rose-500/20 bg-rose-500/10 text-rose-200"
-                : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200";
+                ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200"
+                : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200";
 
               return (
                 <div
                   key={t.id}
-                  className="rounded-2xl border border-white/10 bg-black/10"
+                  className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/65"
                 >
                   <button
                     type="button"
                     onClick={() =>
                       setExpandedId((prev) => (prev === t.id ? null : t.id))
                     }
-                    className="w-full rounded-2xl p-3 text-left active:bg-white/5"
+                    className="w-full rounded-2xl p-3 text-left active:bg-[rgb(var(--surface-2))]/70"
                     aria-expanded={isOpen}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-white/90">
+                        <div className="truncate text-sm font-semibold">
                           {title}
                         </div>
 
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-white/55">
-                          <span className="text-white/60">
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs ui-muted">
+                          <span className="ui-muted">
                             {t.booking_date}
                           </span>
 
@@ -396,12 +394,12 @@ export function TransactionsTable({
                           </span>
 
                           {t.is_archived && (
-                            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60">
+                            <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-2 py-0.5 text-[11px] ui-muted">
                               Archiviert
                             </span>
                           )}
 
-                          <span className="ml-1 inline-flex items-center text-[11px] text-white/45">
+                          <span className="ml-1 inline-flex items-center text-[11px] ui-muted">
                             {isOpen ? "▲" : "▼"}
                           </span>
                         </div>
@@ -410,7 +408,7 @@ export function TransactionsTable({
                       <div className="shrink-0 text-right">
                         <div
                           className={`text-sm font-semibold ${
-                            isExpense ? "text-rose-300" : "text-emerald-300"
+                            isExpense ? "text-rose-600 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300"
                           }`}
                         >
                           {isExpense ? "-" : "+"}{" "}
@@ -420,15 +418,15 @@ export function TransactionsTable({
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                      <div className="rounded-xl border border-white/10 bg-white/5 px-2 py-2">
-                        <div className="text-white/45">Kategorie</div>
-                        <div className="mt-0.5 truncate text-white/80">
+                      <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-2 py-2">
+                        <div className="ui-muted">Kategorie</div>
+                        <div className="mt-0.5 truncate">
                           {category}
                         </div>
                       </div>
-                      <div className="rounded-xl border border-white/10 bg-white/5 px-2 py-2">
-                        <div className="text-white/45">Konto</div>
-                        <div className="mt-0.5 truncate text-white/80">
+                      <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-2 py-2">
+                        <div className="ui-muted">Konto</div>
+                        <div className="mt-0.5 truncate">
                           {account}
                         </div>
                       </div>
@@ -437,30 +435,30 @@ export function TransactionsTable({
 
                   {isOpen && (
                     <div className="px-3 pb-3">
-                      <div className="mt-1 rounded-2xl border border-white/10 bg-white/5 p-3">
+                      <div className="mt-1 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 p-3">
                         <div className="grid grid-cols-1 gap-2 text-xs">
                           <div className="flex items-start justify-between gap-3">
-                            <div className="text-white/45">Gegenpartei</div>
-                            <div className="max-w-[70%] text-right text-white/80">
+                            <div className="ui-muted">Gegenpartei</div>
+                            <div className="max-w-[70%] text-right">
                               {t.counterparty ? t.counterparty : "—"}
                             </div>
                           </div>
 
                           <div className="flex items-start justify-between gap-3">
-                            <div className="text-white/45">Referenz</div>
-                            <div className="max-w-[70%] text-right text-white/80">
+                            <div className="ui-muted">Referenz</div>
+                            <div className="max-w-[70%] text-right">
                               {t.reference ? t.reference : "—"}
                             </div>
                           </div>
 
                           <div className="flex items-start justify-between gap-3">
-                            <div className="text-white/45">Notiz</div>
-                            <div className="max-w-[70%] text-right text-white/80">
+                            <div className="ui-muted">Notiz</div>
+                            <div className="max-w-[70%] text-right">
                               {t.memo ? t.memo : "—"}
                             </div>
                           </div>
 
-                          <div className="pt-1 text-[11px] text-white/35">
+                          <div className="pt-1 text-[11px] ui-muted">
                             ID: {t.id}
                           </div>
                         </div>
@@ -469,7 +467,7 @@ export function TransactionsTable({
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         <button
                           onClick={() => setEditingTx(t)}
-                          className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15"
+                          className="ui-btn h-10 px-3 text-sm"
                         >
                           Bearbeiten
                         </button>
@@ -477,14 +475,14 @@ export function TransactionsTable({
                         {t.is_archived ? (
                           <button
                             onClick={() => void restoreTransaction(t.id)}
-                            className="h-10 rounded-xl bg-white/85 px-3 text-sm font-semibold text-black hover:bg-white active:bg-white/90"
+                            className="ui-btn ui-btn-primary h-10 px-3 text-sm font-semibold"
                           >
                             Restore
                           </button>
                         ) : (
                           <button
                             onClick={() => onArchive(t.id)}
-                            className="h-10 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10 active:bg-white/15"
+                            className="ui-btn h-10 px-3 text-sm"
                           >
                             Archivieren
                           </button>
@@ -500,8 +498,8 @@ export function TransactionsTable({
       </div>
 
       {/* DESKTOP */}
-      <div className="mt-4 hidden overflow-hidden rounded-2xl border border-white/10 bg-black/10 md:block">
-        <div className="grid grid-cols-12 gap-2 border-b border-white/10 px-4 py-3 text-xs font-medium text-white/60">
+      <div className="ui-card mt-4 hidden overflow-hidden md:block">
+        <div className="grid grid-cols-12 gap-2 border-b border-[rgb(var(--border))] px-4 py-3 text-xs font-medium ui-muted">
           <div className="col-span-2">Datum</div>
           <div className="col-span-2">Typ</div>
           <div className="col-span-3">Text</div>
@@ -511,11 +509,11 @@ export function TransactionsTable({
         </div>
 
         {rows.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-white/55">
+          <div className="px-4 py-6 text-sm ui-muted">
             Keine Treffer für deine Filter/Suche.
           </div>
         ) : (
-          <div className="divide-y divide-white/10">
+          <div className="divide-y divide-[rgb(var(--border))]/70">
             {rows.map((t) => {
               const isExpense = t.type === "EXPENSE";
               const title = t.memo || t.counterparty || "Buchung";
@@ -529,7 +527,7 @@ export function TransactionsTable({
                   key={t.id}
                   className="group grid grid-cols-12 items-center gap-2 px-4 py-3"
                 >
-                  <div className="col-span-2 text-sm text-white/75">
+                  <div className="col-span-2 text-sm ui-muted">
                     {t.booking_date}
                   </div>
 
@@ -538,14 +536,14 @@ export function TransactionsTable({
                       <span
                         className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] ${
                           isExpense
-                            ? "border-rose-500/20 bg-rose-500/10 text-rose-200"
-                            : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+                            ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-200"
+                            : "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"
                         }`}
                       >
                         {isExpense ? "Ausgabe" : "Einnahme"}
                       </span>
                       {t.is_archived && (
-                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/60">
+                        <span className="rounded-full border border-[rgb(var(--border))] bg-[rgb(var(--surface-2))]/70 px-2 py-0.5 text-[11px] ui-muted">
                           Archiviert
                         </span>
                       )}
@@ -553,14 +551,14 @@ export function TransactionsTable({
                   </div>
 
                   <div className="col-span-3 min-w-0">
-                    <div className="truncate text-sm font-medium text-white/90">
+                    <div className="truncate text-sm font-medium">
                       {title}
                     </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-white/45">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs ui-muted">
                       {t.reference ? (
                         <span>{t.reference}</span>
                       ) : (
-                        <span className="text-white/35">—</span>
+                        <span className="ui-muted">—</span>
                       )}
                       {t.counterparty ? (
                         <>
@@ -571,17 +569,17 @@ export function TransactionsTable({
                     </div>
                   </div>
 
-                  <div className="col-span-2 text-sm text-white/75">
+                  <div className="col-span-2 text-sm ui-muted">
                     {category}
                   </div>
-                  <div className="col-span-2 text-sm text-white/75">
+                  <div className="col-span-2 text-sm ui-muted">
                     {account}
                   </div>
 
                   <div className="col-span-1 text-right text-sm font-semibold">
                     <span
                       className={
-                        isExpense ? "text-rose-300" : "text-emerald-300"
+                        isExpense ? "text-rose-600 dark:text-rose-300" : "text-emerald-600 dark:text-emerald-300"
                       }
                     >
                       {isExpense ? "-" : "+"}{" "}
@@ -592,7 +590,7 @@ export function TransactionsTable({
                   <div className="col-span-12 mt-2 hidden items-center justify-end gap-2 group-hover:flex">
                     <button
                       onClick={() => setEditingTx(t)}
-                      className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10"
+                      className="ui-btn h-9 px-3 text-sm"
                     >
                       Bearbeiten
                     </button>
@@ -600,14 +598,14 @@ export function TransactionsTable({
                     {!t.is_archived ? (
                       <button
                         onClick={() => onArchive(t.id)}
-                        className="h-9 rounded-xl border border-white/10 bg-white/5 px-3 text-sm text-white/80 hover:bg-white/10"
+                        className="ui-btn h-9 px-3 text-sm"
                       >
                         Archivieren
                       </button>
                     ) : (
                       <button
                         onClick={() => void restoreTransaction(t.id)}
-                        className="h-9 rounded-xl bg-white/85 px-3 text-sm font-semibold text-black hover:bg-white"
+                        className="ui-btn ui-btn-primary h-9 px-3 text-sm font-semibold"
                       >
                         Restore
                       </button>

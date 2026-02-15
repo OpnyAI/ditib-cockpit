@@ -99,20 +99,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
   }
 
-  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "INVALID_JSON" }, { status: 400 });
+  }
+  const b = body as Record<string, unknown>;
+
+  const name = typeof b.name === "string" ? b.name.trim() : "";
   const currency =
-    typeof body?.currency === "string" && body.currency.trim()
-      ? body.currency.trim()
+    typeof b.currency === "string" && b.currency.trim()
+      ? b.currency.trim()
       : "EUR";
-  const openingBalanceCents = Number.isFinite(body?.openingBalanceCents)
-    ? Number(body.openingBalanceCents)
+  const openingBalanceCents =
+    typeof b.openingBalanceCents === "number" &&
+    Number.isFinite(b.openingBalanceCents)
+      ? Number(b.openingBalanceCents)
     : 0;
 
   if (!name) {

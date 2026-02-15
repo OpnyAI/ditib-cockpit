@@ -4,12 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-type Body = {
-  targetUserId: string;
-  tenantId: string;
-  role: "MITARBEITER" | "VORSTAND" | "KASSIERER" | "ADMIN";
-};
-
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -29,10 +23,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const body = (await req.json()) as Partial<Body>;
-    const targetUserId = body.targetUserId?.trim();
-    const tenantId = body.tenantId?.trim();
-    const role = body.role;
+    const rawBody: unknown = await req.json();
+    if (!rawBody || typeof rawBody !== "object") {
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+    const body = rawBody as Record<string, unknown>;
+
+    const targetUserId =
+      typeof body.targetUserId === "string" ? body.targetUserId.trim() : "";
+    const tenantId =
+      typeof body.tenantId === "string" ? body.tenantId.trim() : "";
+    const role =
+      body.role === "MITARBEITER" ||
+      body.role === "VORSTAND" ||
+      body.role === "KASSIERER" ||
+      body.role === "ADMIN"
+        ? body.role
+        : null;
 
     if (!targetUserId || !tenantId || !role) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -80,9 +87,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
     return NextResponse.json(
-      { error: e?.message ?? "Unknown error" },
+      { error: message },
       { status: 500 }
     );
   }

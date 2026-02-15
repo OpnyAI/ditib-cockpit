@@ -18,10 +18,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const request_id = String(body.request_id ?? "").trim();
-  const role = String(body.role ?? "KOMMUNIKATION").trim();
-  const is_board_member = Boolean(body.is_board_member ?? true);
+  const rawBody: unknown = await req.json();
+  if (!rawBody || typeof rawBody !== "object") {
+    return NextResponse.json({ error: "INVALID_BODY" }, { status: 400 });
+  }
+  const body = rawBody as Record<string, unknown>;
+
+  const request_id =
+    typeof body.request_id === "string" ? body.request_id.trim() : "";
+  const role =
+    typeof body.role === "string" ? body.role.trim() : "KOMMUNIKATION";
+  const is_board_member =
+    typeof body.is_board_member === "boolean"
+      ? body.is_board_member
+      : Boolean(body.is_board_member ?? true);
 
   if (!request_id)
     return NextResponse.json({ error: "MISSING_REQUEST_ID" }, { status: 400 });
@@ -102,15 +112,15 @@ export async function POST(req: Request) {
 
   // Push an Antragsteller (best effort)
   try {
-    await sendPushToUser(srv as any, reqRow.tenant_id, reqRow.user_id, {
+    await sendPushToUser(srv, reqRow.tenant_id, reqRow.user_id, {
       title: "DITIB Cockpit",
       body: "Dein Beitritt wurde genehmigt ✅",
       url: "/app",
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(
       "Push send (admin/requests/approve) failed:",
-      e?.message || e
+      e instanceof Error ? e.message : String(e)
     );
   }
 
