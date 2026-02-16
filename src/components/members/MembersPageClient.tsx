@@ -1,8 +1,11 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CSVImportModal } from "@/components/members/CSVImportModal";
+import { FeeStatusBadge } from "@/components/members/FeeStatusBadge";
+import type { MembershipFeeSummary, MembershipFeeSummaryStatus } from "@/lib/membership-fees/types";
 
 type Member = {
   id: string;
@@ -28,6 +31,20 @@ type MemberFormState = {
   is_active: boolean;
 };
 
+type FeeStatusMap = Record<string, MembershipFeeSummary>;
+type FeeSummaryApiItem = {
+  member_id: string;
+  status: MembershipFeeSummaryStatus;
+  openAmountCents: number;
+  openCount: number;
+};
+
+const UNKNOWN_SUMMARY: MembershipFeeSummary = {
+  status: "UNKNOWN",
+  openAmountCents: 0,
+  openCount: 0,
+};
+
 function toFormState(member?: Member | null): MemberFormState {
   return {
     full_name: member?.full_name ?? "",
@@ -43,12 +60,17 @@ function normalize(value: string) {
   return value.trim().toLowerCase();
 }
 
+function createUnknownSummaryMap(members: Member[]): FeeStatusMap {
+  return Object.fromEntries(members.map((member) => [member.id, UNKNOWN_SUMMARY]));
+}
+
 export default function MembersPageClient({ canManage }: { canManage: boolean }) {
   const router = useRouter();
 
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [members, setMembers] = React.useState<Member[]>([]);
+  const [feeStatusByMember, setFeeStatusByMember] = React.useState<FeeStatusMap>({});
 
   const [query, setQuery] = React.useState("");
   const [onlyActive, setOnlyActive] = React.useState(true);
@@ -85,13 +107,54 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
             : `Mitglieder konnten nicht geladen werden (${res.status}).`
         );
         setMembers([]);
+        setFeeStatusByMember({});
         return;
       }
 
-      setMembers(Array.isArray(json?.members) ? (json.members as Member[]) : []);
+      const nextMembers = Array.isArray(json?.members) ? (json.members as Member[]) : [];
+      setMembers(nextMembers);
+
+      try {
+        const summaryRes = await fetch("/api/members/fees/summaries", {
+          cache: "no-store",
+        });
+        const summaryJson = await summaryRes.json().catch(() => null);
+
+        if (!summaryRes.ok || !summaryJson?.ok) {
+          setFeeStatusByMember(createUnknownSummaryMap(nextMembers));
+          return;
+        }
+
+        const summaryRows = Array.isArray(summaryJson?.data?.summaries)
+          ? (summaryJson.data.summaries as FeeSummaryApiItem[])
+          : [];
+
+        const apiMap: FeeStatusMap = Object.fromEntries(
+          summaryRows.map((row) => [
+            row.member_id,
+            {
+              status: row.status,
+              openAmountCents: Number.isFinite(Number(row.openAmountCents))
+                ? Number(row.openAmountCents)
+                : 0,
+              openCount: Number.isFinite(Number(row.openCount))
+                ? Number(row.openCount)
+                : 0,
+            },
+          ]),
+        );
+
+        const merged: FeeStatusMap = Object.fromEntries(
+          nextMembers.map((member) => [member.id, apiMap[member.id] ?? UNKNOWN_SUMMARY]),
+        );
+        setFeeStatusByMember(merged);
+      } catch {
+        setFeeStatusByMember(createUnknownSummaryMap(nextMembers));
+      }
     } catch {
       setError("Mitglieder konnten nicht geladen werden.");
       setMembers([]);
+      setFeeStatusByMember({});
     } finally {
       setLoading(false);
     }
@@ -204,6 +267,16 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
     await loadMembers();
   }
 
+  function feeTooltipText(memberId: string) {
+    const summary = feeStatusByMember[memberId];
+    if (!summary) return "Beitragsstatus wird geladen…";
+    const euro = new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR",
+    }).format(summary.openAmountCents / 100);
+    return `Offene Summe: ${euro}`;
+  }
+
   return (
     <div className="space-y-4">
       <div className="ui-card p-4 md:p-5">
@@ -284,13 +357,18 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
                   <th className="px-4 py-3 font-medium">Funktion</th>
                   <th className="px-4 py-3 font-medium">Kontakt</th>
                   <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Beitragsstatus</th>
                   {canManage ? <th className="px-4 py-3 font-medium">Aktionen</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {filteredMembers.map((member) => (
                   <tr key={member.id} className="border-b border-[rgb(var(--border))]/40 last:border-0">
-                    <td className="px-4 py-3 font-medium">{member.full_name}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link href={`/app/members/${member.id}`} className="hover:underline">
+                        {member.full_name}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3 ui-muted">{member.function_title ?? "-"}</td>
                     <td className="px-4 py-3 ui-muted">
                       <div>{member.email ?? "-"}</div>
@@ -307,6 +385,13 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
                       >
                         {member.is_active ? "Aktiv" : "Inaktiv"}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <FeeStatusBadge
+                        kind="summary"
+                        status={feeStatusByMember[member.id]?.status ?? "UNKNOWN"}
+                        title={feeTooltipText(member.id)}
+                      />
                     </td>
                     {canManage ? (
                       <td className="px-4 py-3">
@@ -341,7 +426,9 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
               <div key={member.id} className="ui-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="font-semibold">{member.full_name}</div>
+                    <Link href={`/app/members/${member.id}`} className="font-semibold hover:underline">
+                      {member.full_name}
+                    </Link>
                     <div className="text-sm ui-muted">{member.function_title ?? "Keine Funktion"}</div>
                   </div>
                   <span
@@ -360,6 +447,13 @@ export default function MembersPageClient({ canManage }: { canManage: boolean })
                   {member.email ? <div>{member.email}</div> : null}
                   {member.phone ? <div>{member.phone}</div> : null}
                   {member.notes ? <div className="mt-1">{member.notes}</div> : null}
+                </div>
+                <div className="mt-2">
+                  <FeeStatusBadge
+                    kind="summary"
+                    status={feeStatusByMember[member.id]?.status ?? "UNKNOWN"}
+                    title={feeTooltipText(member.id)}
+                  />
                 </div>
 
                 {canManage ? (

@@ -58,7 +58,7 @@ export default function FinanceDashboardPage() {
       { value: 10, label: "November" },
       { value: 11, label: "Dezember" },
     ],
-    []
+    [],
   );
 
   const yearOptions = React.useMemo(() => {
@@ -72,18 +72,27 @@ export default function FinanceDashboardPage() {
     return toInputMonthValue(year, monthIndex0); // "YYYY-MM"
   }, [year, monthIndex0]);
 
+  function buildTransactionsUrl(monthKey: string, includeArchived: boolean) {
+    const params = new URLSearchParams({
+      limit: "200",
+      offset: "0",
+      month: monthKey, // ✅ WICHTIG: month muss immer gesetzt sein
+    });
+
+    if (includeArchived) params.set("includeArchived", "1");
+
+    return `/api/finance/transactions?${params.toString()}`;
+  }
+
   async function loadAll() {
     setLoading(true);
     try {
       const [accRes, catRes, txRes] = await Promise.all([
         fetch("/api/finance/accounts", { cache: "no-store" }),
         fetch("/api/finance/categories", { cache: "no-store" }),
-        fetch(
-          `/api/finance/transactions?limit=200&offset=0${
-            showArchived ? "&includeArchived=1" : ""
-          }`,
-          { cache: "no-store" }
-        ),
+        fetch(buildTransactionsUrl(selectedMonthKey, showArchived), {
+          cache: "no-store",
+        }),
       ]);
 
       const accJson = await accRes.json().catch(() => null);
@@ -92,10 +101,10 @@ export default function FinanceDashboardPage() {
 
       setAccounts(Array.isArray(accJson?.accounts) ? accJson.accounts : []);
       setCategories(
-        Array.isArray(catJson?.categories) ? catJson.categories : []
+        Array.isArray(catJson?.categories) ? catJson.categories : [],
       );
       setTransactions(
-        Array.isArray(txJson?.transactions) ? txJson.transactions : []
+        Array.isArray(txJson?.transactions) ? txJson.transactions : [],
       );
     } finally {
       setLoading(false);
@@ -108,15 +117,13 @@ export default function FinanceDashboardPage() {
       const inc =
         typeof includeArchived === "boolean" ? includeArchived : showArchived;
 
-      const txRes = await fetch(
-        `/api/finance/transactions?limit=200&offset=0${
-          inc ? "&includeArchived=1" : ""
-        }`,
-        { cache: "no-store" }
-      );
+      const txRes = await fetch(buildTransactionsUrl(selectedMonthKey, inc), {
+        cache: "no-store",
+      });
       const txJson = await txRes.json().catch(() => null);
+
       setTransactions(
-        Array.isArray(txJson?.transactions) ? txJson.transactions : []
+        Array.isArray(txJson?.transactions) ? txJson.transactions : [],
       );
     } finally {
       setRefreshing(false);
@@ -131,12 +138,12 @@ export default function FinanceDashboardPage() {
   React.useEffect(() => {
     void refresh(showArchived);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showArchived]);
+  }, [showArchived, selectedMonthKey]);
 
   const monthTx = React.useMemo(() => {
     const key = selectedMonthKey;
     return transactions.filter(
-      (t) => monthKeyFromDateISO(t.booking_date) === key
+      (t) => monthKeyFromDateISO(t.booking_date) === key,
     );
   }, [transactions, selectedMonthKey]);
 
@@ -177,7 +184,6 @@ export default function FinanceDashboardPage() {
       if (t.type !== "EXPENSE") continue;
 
       const catId = t.category_id ?? UNCATEGORIZED_ID;
-
       const prev = m.get(catId) ?? 0;
       m.set(catId, prev + (t.amount_cents ?? 0));
     }
@@ -269,7 +275,7 @@ export default function FinanceDashboardPage() {
 
   async function archiveTransaction(id: string) {
     setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, is_archived: true } : t))
+      prev.map((t) => (t.id === id ? { ...t, is_archived: true } : t)),
     );
 
     try {
@@ -280,12 +286,12 @@ export default function FinanceDashboardPage() {
 
       if (!res.ok) {
         setTransactions((prev) =>
-          prev.map((t) => (t.id === id ? { ...t, is_archived: false } : t))
+          prev.map((t) => (t.id === id ? { ...t, is_archived: false } : t)),
         );
         alert(
           json?.error
             ? String(json.error)
-            : `Archivieren fehlgeschlagen (${res.status})`
+            : `Archivieren fehlgeschlagen (${res.status})`,
         );
         return;
       }
@@ -293,7 +299,7 @@ export default function FinanceDashboardPage() {
       await refresh(showArchived);
     } catch {
       setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, is_archived: false } : t))
+        prev.map((t) => (t.id === id ? { ...t, is_archived: false } : t)),
       );
       alert("Archivieren fehlgeschlagen (Network).");
     }
@@ -321,7 +327,7 @@ export default function FinanceDashboardPage() {
     lines.push(header.map(csvEscape).join(";"));
 
     const sorted = [...exportRows].sort((a, b) =>
-      a.booking_date > b.booking_date ? 1 : -1
+      a.booking_date > b.booking_date ? 1 : -1,
     );
 
     for (const t of sorted) {
@@ -345,15 +351,13 @@ export default function FinanceDashboardPage() {
           t.id,
         ]
           .map(csvEscape)
-          .join(";")
+          .join(";"),
       );
     }
 
     const bom = "\uFEFF";
     const csv = bom + lines.join("\r\n") + "\r\n";
-    const filename = `ditib-finance-${selectedMonthKey}${
-      showArchived ? "-inkl-archiv" : ""
-    }.csv`;
+    const filename = `ditib-finance-${selectedMonthKey}${showArchived ? "-inkl-archiv" : ""}.csv`;
 
     downloadTextFile(filename, csv, "text/csv;charset=utf-8");
     setToast("CSV heruntergeladen");
@@ -424,7 +428,7 @@ export default function FinanceDashboardPage() {
           onArchive={archiveTransaction}
           showArchived={showArchived}
           onToggleArchived={(v) => setShowArchived(v)}
-          onRefresh={() => void refresh(showArchived)} // ✅ HINZUFÜGEN
+          onRefresh={() => void refresh(showArchived)}
         />
       </div>
 

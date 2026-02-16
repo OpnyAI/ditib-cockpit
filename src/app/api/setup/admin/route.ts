@@ -1,7 +1,16 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerMutableClient } from "@/lib/supabase/server-mutable";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
-import { writeActivityLog } from "@/lib/activity/log";
+import { generateInviteCode } from "@/lib/invite-code";
+
+export const runtime = "nodejs";
+
+type Body = {
+  name: string;
+  city: string | null;
+  postal_code: string | null;
+  country: "DE" | "AT" | "CH";
+};
 
 function slugify(input: string) {
   return input
@@ -15,94 +24,155 @@ function slugify(input: string) {
     .replace(/(^-|-$)+/g, "");
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeOptionalText(value: unknown) {
+  if (typeof value !== "string") return null;
+  const v = value.trim();
+  return v.length > 0 ? v : null;
+}
+
+function parseBody(raw: unknown): Body | null {
+  if (!isRecord(raw)) return null;
+
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  const city = normalizeOptionalText(raw.city);
+  const postal_code = normalizeOptionalText(raw.postal_code);
+  const countryRaw = typeof raw.country === "string" ? raw.country.trim().toUpperCase() : "DE";
+  const country = countryRaw === "AT" || countryRaw === "CH" ? countryRaw : "DE";
+
+  if (name.length < 2) return null;
+
+  return { name, city, postal_code, country };
+}
+
+function isUniqueInviteCodeViolation(message: string, code?: string) {
+  return code === "23505" && /invite_code/i.test(message);
+}
+
 export async function POST(req: Request) {
   const supabaseAuth = await createSupabaseServerMutableClient();
-  const { data: sessionData } = await supabaseAuth.auth.getSession();
-  const userId = sessionData.session?.user?.id;
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabaseAuth.auth.getUser();
 
-  if (!userId)
-    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  if (userErr || !user) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "UNAUTHENTICATED" },
+      { status: 401 },
+    );
+  }
 
-  const body = await req.json();
-  const display_name = String(body.display_name ?? "").trim();
-  const directory_id = String(body.directory_id ?? "").trim();
+  let rawBody: unknown;
+  try {
+    rawBody = await req.json();
+  } catch {
+    return NextResponse.json(
+      { ok: false, data: null, error: "INVALID_JSON" },
+      { status: 400 },
+    );
+  }
 
-  if (!display_name || !directory_id) {
-    return NextResponse.json({ error: "MISSING_FIELDS" }, { status: 400 });
+  const body = parseBody(rawBody);
+  if (!body) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "INVALID_PAYLOAD" },
+      { status: 400 },
+    );
   }
 
   const srv = createSupabaseServiceRoleClient();
 
-  // Directory Entry laden
-  const { data: directory, error: dirErr } = await srv
-    .from("ditib_directory")
-    .select("id, name")
-    .eq("id", directory_id)
-    .maybeSingle<{ id: string; name: string }>();
+  const { data: profile, error: profileErr } = await srv
+    .from("profiles")
+    .select("tenant_id, display_name")
+    .eq("user_id", user.id)
+    .maybeSingle<{ tenant_id: string | null; display_name: string | null }>();
 
-  if (dirErr || !directory) {
-    return NextResponse.json({ error: "DIRECTORY_NOT_FOUND" }, { status: 404 });
-  }
-
-  // Tenant darf nur einmal existieren
-  const { data: existingTenant } = await srv
-    .from("tenants")
-    .select("id")
-    .eq("directory_id", directory_id)
-    .maybeSingle<{ id: string }>();
-
-  if (existingTenant?.id) {
+  if (profileErr || !profile) {
     return NextResponse.json(
-      { error: "TENANT_ALREADY_EXISTS" },
-      { status: 409 }
+      { ok: false, data: null, error: "PROFILE_NOT_FOUND" },
+      { status: 403 },
     );
   }
 
-  const slug = slugify(directory.name);
-
-  // Tenant anlegen
-  const { data: tenant, error: tenantErr } = await srv
-    .from("tenants")
-    .insert({ name: directory.name, slug, directory_id })
-    .select("id, name, slug, directory_id")
-    .single<{ id: string; name: string; slug: string; directory_id: string }>();
-
-  if (tenantErr || !tenant) {
+  if (profile.tenant_id) {
     return NextResponse.json(
-      { error: "TENANT_CREATE_FAILED", detail: tenantErr?.message },
-      { status: 500 }
+      { ok: false, data: null, error: "ALREADY_SETUP" },
+      { status: 409 },
     );
   }
 
-  // Profil updaten (ADMIN + Board)
-  const { error: profileErr } = await srv
+  let tenantId: string | null = null;
+  let inviteCode: string | null = null;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const generatedInviteCode = generateInviteCode();
+    const baseSlug = slugify(body.name);
+    const slugSuffix = generateInviteCode().toLowerCase().slice(0, 4);
+    const slug = `${baseSlug || "ditib"}-${slugSuffix}`;
+
+    const { data: tenant, error: tenantErr } = await srv
+      .from("tenants")
+      .insert({
+        name: body.name,
+        city: body.city,
+        postal_code: body.postal_code,
+        country: body.country,
+        invite_code: generatedInviteCode,
+        invite_enabled: true,
+        slug,
+      })
+      .select("id, invite_code")
+      .single<{ id: string; invite_code: string }>();
+
+    if (tenantErr) {
+      if (isUniqueInviteCodeViolation(tenantErr.message, tenantErr.code)) {
+        continue;
+      }
+      return NextResponse.json(
+        { ok: false, data: null, error: `TENANT_CREATE_FAILED: ${tenantErr.message}` },
+        { status: 500 },
+      );
+    }
+
+    tenantId = tenant.id;
+    inviteCode = tenant.invite_code;
+    break;
+  }
+
+  if (!tenantId || !inviteCode) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "INVITE_CODE_COLLISION_RETRY_EXCEEDED" },
+      { status: 500 },
+    );
+  }
+
+  const { error: profileUpdateErr } = await srv
     .from("profiles")
     .update({
-      tenant_id: tenant.id,
-      display_name,
+      tenant_id: tenantId,
       role: "ADMIN",
       is_board_member: true,
     })
-    .eq("user_id", userId);
+    .eq("user_id", user.id);
 
-  if (profileErr) {
+  if (profileUpdateErr) {
     return NextResponse.json(
-      { error: "PROFILE_UPDATE_FAILED", detail: profileErr.message },
-      { status: 500 }
+      { ok: false, data: null, error: `PROFILE_UPDATE_FAILED: ${profileUpdateErr.message}` },
+      { status: 500 },
     );
   }
 
-  // Activity Log (ADMIN_ONLY)
-  await writeActivityLog({
-    tenant_id: tenant.id,
-    actor_user_id: userId,
-    actor_name: display_name,
-    action: "TENANT_CREATED",
-    entity_type: "TENANT",
-    entity_id: tenant.id,
-    visibility: "ADMIN_ONLY",
-    meta: { directory_id, slug, tenant_name: tenant.name },
-  });
-
-  return NextResponse.json({ ok: true, tenant });
+  return NextResponse.json(
+    {
+      ok: true,
+      data: { tenant_id: tenantId, invite_code: inviteCode },
+      error: null,
+    },
+    { status: 200 },
+  );
 }

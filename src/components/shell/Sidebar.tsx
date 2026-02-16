@@ -8,6 +8,7 @@ const NAV = [
   { href: "/app", label: "Dashboard" },
   { href: "/app/finance", label: "Finanzen" },
   { href: "/app/members", label: "Mitglieder" },
+  { href: "/app/members/fees", label: "Beiträge Übersicht" },
   { href: "/app/communication", label: "Mitteilungen" },
   { href: "/app/events", label: "Termine" },
   { href: "/app/settings", label: "Einstellungen" },

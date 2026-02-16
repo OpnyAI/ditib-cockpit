@@ -1,4 +1,3 @@
-// src/app/setup/join/page.tsx
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import SetupJoinForm from "@/components/setup/SetupJoinForm";
@@ -8,11 +7,9 @@ import { getSetupState } from "@/lib/auth/get-setup-state";
 export default async function SetupJoinPage() {
   const state = await getSetupState();
 
-  // Guardrails / konsistenter Flow
   if (state.kind === "LOGGED_OUT") redirect("/login");
   if (state.kind === "READY") redirect("/app");
   if (state.kind === "PENDING") redirect("/pending");
-  // state.kind === "NEEDS_SETUP" => hier bleiben
 
   return (
     <div className="min-h-[100svh]">
@@ -44,8 +41,8 @@ export default async function SetupJoinPage() {
                     Zugang anfragen
                   </h1>
                   <p className="mt-1 text-sm ui-muted">
-                    Wähle deine Gemeinde aus dem DITIB-Verzeichnis und stelle
-                    eine Anfrage. Ein ADMIN muss dich freigeben.
+                    Gib deinen Invite Code ein. Ein ADMIN muss deine Anfrage
+                    freigeben.
                   </p>
                 </div>
               </div>
@@ -60,14 +57,14 @@ export default async function SetupJoinPage() {
             </div>
 
             <div className="mt-6">
-              <a className="ui-muted text-sm hover:text-white" href="/setup">
+              <a className="text-sm ui-muted hover:text-[rgb(var(--text))]" href="/setup">
                 ← Zurück
               </a>
             </div>
           </div>
 
           <div className="mt-4 text-center text-xs ui-muted">
-            Datenschutzkonform • Token-basiertes Design • Dark-first
+            Einladungscode-basiert • PENDING/APPROVED Flow bleibt aktiv
           </div>
         </div>
       </div>

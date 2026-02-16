@@ -9,23 +9,32 @@ export default async function SetupAdminPage() {
   if (!ctx.needsSetup) redirect("/app");
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="mx-auto flex min-h-screen max-w-3xl items-center px-4">
-        <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-8">
-          <h1 className="text-2xl font-semibold">Gemeinde einrichten</h1>
-          <p className="mt-2 text-sm text-white/60">
-            Nur für ADMIN/Präsident. Der Tenant wird anhand des
-            DITIB-Verzeichnisses erstellt.
-          </p>
+    <div className="min-h-[100svh]">
+      <div
+        className={[
+          "min-h-[100svh] w-full px-4 py-10",
+          "flex items-center justify-center",
+          "[padding-top:calc(env(safe-area-inset-top)+24px)]",
+          "[padding-bottom:calc(env(safe-area-inset-bottom)+24px)]",
+        ].join(" ")}
+      >
+        <div className="w-full max-w-3xl">
+          <div className="ui-card p-5 sm:p-8">
+            <h1 className="text-2xl font-semibold">Gemeinde einrichten</h1>
+            <p className="mt-2 text-sm ui-muted">
+              Admin-Setup erstellt den Tenant direkt und generiert einen Invite
+              Code für weitere Nutzer.
+            </p>
 
-          <div className="mt-6">
-            <SetupAdminForm />
-          </div>
+            <div className="mt-6 ui-surface p-4 sm:p-5">
+              <SetupAdminForm />
+            </div>
 
-          <div className="mt-6">
-            <a className="text-sm text-white/60 hover:text-white" href="/setup">
-              ← Zurück
-            </a>
+            <div className="mt-6">
+              <a className="text-sm ui-muted hover:text-[rgb(var(--text))]" href="/setup">
+                ← Zurück
+              </a>
+            </div>
           </div>
         </div>
       </div>

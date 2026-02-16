@@ -1,40 +1,18 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerMutableClient } from "@/lib/supabase/server-mutable";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 
-type Profile = {
-  tenant_id: string | null;
-  role: string | null;
-  is_board_member: boolean | null;
-};
-
-type MemberInsertBody = {
-  full_name?: string;
-  function_title?: string;
-  email?: string;
-  phone?: string;
-  notes?: string;
-  is_active?: boolean;
-};
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function canManageMembers(profile: Profile) {
-  return (
-    profile.role === "ADMIN" ||
-    profile.role === "VORSTAND" ||
-    Boolean(profile.is_board_member)
-  );
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function toNullableTrimmed(value: unknown) {
-  if (typeof value !== "string") return null;
-  const v = value.trim();
-  return v.length > 0 ? v : null;
+function normalizeInviteCode(value: string) {
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
-async function getAuthContext() {
+export async function POST(req: Request) {
   const supabase = await createSupabaseServerMutableClient();
 
   const {
@@ -43,138 +21,128 @@ async function getAuthContext() {
   } = await supabase.auth.getUser();
 
   if (userErr || !user) {
-    return {
-      error: NextResponse.json({ error: "Nicht eingeloggt." }, { status: 401 }),
-    };
-  }
-
-  const { data: profile, error: profileErr } = await supabase
-    .from("profiles")
-    .select("tenant_id, role, is_board_member")
-    .eq("user_id", user.id)
-    .maybeSingle<Profile>();
-
-  if (profileErr || !profile) {
-    return {
-      error: NextResponse.json(
-        { error: "Profil konnte nicht geladen werden." },
-        { status: 403 },
-      ),
-    };
-  }
-
-  if (!profile.tenant_id) {
-    return {
-      error: NextResponse.json(
-        { error: "Kein Tenant im Profil gesetzt." },
-        { status: 403 },
-      ),
-    };
-  }
-
-  return { supabase, userId: user.id, profile };
-}
-
-export async function GET(req: Request) {
-  const ctx = await getAuthContext();
-  if ("error" in ctx) return ctx.error;
-
-  const url = new URL(req.url);
-  const active = url.searchParams.get("active");
-
-  let query = ctx.supabase
-    .from("tenant_members")
-    .select(
-      "id, tenant_id, full_name, function_title, email, phone, notes, is_active, created_at, updated_at, created_by, updated_by",
-    )
-    // ✅ CRITICAL: Tenant-Scoping
-    .eq("tenant_id", ctx.profile.tenant_id)
-    .order("full_name", { ascending: true });
-
-  if (active === "1") {
-    query = query.eq("is_active", true);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
     return NextResponse.json(
-      { error: `Mitglieder konnten nicht geladen werden: ${error.message}` },
-      { status: 500 },
+      { ok: false, data: null, error: "UNAUTHENTICATED" },
+      { status: 401 },
     );
   }
 
-  return NextResponse.json({ members: data ?? [] }, { status: 200 });
-}
-
-export async function POST(req: Request) {
-  const ctx = await getAuthContext();
-  if ("error" in ctx) return ctx.error;
-
-  if (!canManageMembers(ctx.profile)) {
+  let rawBody: unknown;
+  try {
+    rawBody = await req.json();
+  } catch {
     return NextResponse.json(
-      { error: "Keine Berechtigung zum Erstellen von Mitgliedern." },
+      { ok: false, data: null, error: "INVALID_JSON" },
+      { status: 400 },
+    );
+  }
+
+  if (!isRecord(rawBody)) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "INVALID_PAYLOAD" },
+      { status: 400 },
+    );
+  }
+
+  const inviteCodeRaw = typeof rawBody.invite_code === "string" ? rawBody.invite_code : "";
+  const inviteCode = normalizeInviteCode(inviteCodeRaw);
+
+  if (inviteCode.length < 6) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "INVITE_CODE_INVALID" },
+      { status: 400 },
+    );
+  }
+
+  const service = createSupabaseServiceRoleClient();
+
+  const { data: profile, error: profileErr } = await service
+    .from("profiles")
+    .select("tenant_id, display_name")
+    .eq("user_id", user.id)
+    .maybeSingle<{ tenant_id: string | null; display_name: string | null }>();
+
+  if (profileErr || !profile) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "PROFILE_NOT_FOUND" },
       { status: 403 },
     );
   }
 
-  let body: MemberInsertBody;
-  try {
-    body = (await req.json()) as MemberInsertBody;
-  } catch {
-    return NextResponse.json({ error: "Ungültiges JSON." }, { status: 400 });
-  }
-
-  const full_name =
-    typeof body.full_name === "string" ? body.full_name.trim() : "";
-  const function_title = toNullableTrimmed(body.function_title);
-  const email = toNullableTrimmed(body.email);
-  const phone = toNullableTrimmed(body.phone);
-  const notes = toNullableTrimmed(body.notes);
-  const is_active = typeof body.is_active === "boolean" ? body.is_active : true;
-
-  if (full_name.length < 2) {
+  if (profile.tenant_id) {
     return NextResponse.json(
-      { error: "Bitte einen gültigen Namen eingeben (mindestens 2 Zeichen)." },
-      { status: 400 },
+      { ok: false, data: null, error: "ALREADY_IN_TENANT" },
+      { status: 409 },
     );
   }
 
-  if (email && !EMAIL_REGEX.test(email)) {
+  const { data: tenant, error: tenantErr } = await service
+    .from("tenants")
+    .select("id, invite_code, invite_enabled")
+    .ilike("invite_code", inviteCode)
+    .eq("invite_enabled", true)
+    .maybeSingle<{ id: string; invite_code: string; invite_enabled: boolean }>();
+
+  if (tenantErr || !tenant) {
     return NextResponse.json(
-      { error: "Bitte eine gültige E-Mail-Adresse eingeben." },
-      { status: 400 },
+      { ok: false, data: null, error: "INVITE_CODE_INVALID" },
+      { status: 404 },
     );
   }
 
-  const { data, error } = await ctx.supabase
-    .from("tenant_members")
+  const { data: existingPending, error: existingErr } = await service
+    .from("tenant_join_requests")
+    .select("id, status")
+    .eq("user_id", user.id)
+    .eq("tenant_id", tenant.id)
+    .eq("status", "PENDING")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string; status: string }>();
+
+  if (existingErr) {
+    return NextResponse.json(
+      { ok: false, data: null, error: `JOIN_REQUEST_LOOKUP_FAILED: ${existingErr.message}` },
+      { status: 500 },
+    );
+  }
+
+  if (existingPending?.id) {
+    return NextResponse.json(
+      {
+        ok: true,
+        data: { request_id: existingPending.id, alreadyPending: true },
+        error: null,
+      },
+      { status: 200 },
+    );
+  }
+
+  const { data: newRequest, error: insertErr } = await service
+    .from("tenant_join_requests")
     .insert({
-      tenant_id: ctx.profile.tenant_id,
-      full_name,
-      function_title,
-      email,
-      phone,
-      notes,
-      is_active,
-      created_by: ctx.userId,
-      updated_by: ctx.userId,
+      tenant_id: tenant.id,
+      user_id: user.id,
+      requester_email: user.email ?? null,
+      display_name: profile.display_name ?? null,
+      status: "PENDING",
     })
-    .select(
-      "id, tenant_id, full_name, function_title, email, phone, notes, is_active, created_at, updated_at, created_by, updated_by",
-    )
-    .single();
+    .select("id")
+    .single<{ id: string }>();
 
-  if (error) {
-    const status = /row-level security|permission denied/i.test(error.message)
-      ? 403
-      : 500;
-
+  if (insertErr) {
     return NextResponse.json(
-      { error: `Mitglied konnte nicht erstellt werden: ${error.message}` },
-      { status },
+      { ok: false, data: null, error: `JOIN_REQUEST_CREATE_FAILED: ${insertErr.message}` },
+      { status: 500 },
     );
   }
 
-  return NextResponse.json({ member: data }, { status: 201 });
+  return NextResponse.json(
+    {
+      ok: true,
+      data: { request_id: newRequest.id, alreadyPending: false },
+      error: null,
+    },
+    { status: 201 },
+  );
 }

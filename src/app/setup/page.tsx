@@ -43,8 +43,8 @@ export default async function SetupPage() {
                   </h1>
                   <p className="mt-1 text-sm ui-muted">
                     Deine Gemeinde wird zentral von einem Präsidenten (ADMIN)
-                    eingerichtet. Danach kannst du Zugang anfragen und wirst
-                    freigeschaltet.
+                    eingerichtet. Danach kannst du per Invite Code Zugang
+                    anfragen und wirst freigeschaltet.
                   </p>
                 </div>
               </div>
@@ -110,8 +110,8 @@ export default async function SetupPage() {
                     Zugang anfragen
                   </div>
                   <p className="mt-2 text-sm ui-muted">
-                    Wähle deine Gemeinde aus dem DITIB-Verzeichnis und stelle
-                    eine Anfrage. Ein ADMIN gibt dich frei.
+                    Gib den Invite Code deiner Gemeinde ein und stelle eine
+                    Anfrage. Ein ADMIN gibt dich frei.
                   </p>
 
                   <div className="mt-4">

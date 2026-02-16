@@ -1,190 +1,188 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import * as React from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type DirectoryRow = {
-  id: string;
-  name: string;
-  city: string | null;
-  postal_code: string | null;
+type Country = "DE" | "AT" | "CH";
+
+type SetupSuccess = {
+  tenant_id: string;
+  invite_code: string;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
 
 export default function SetupAdminForm() {
   const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
 
-  const [displayName, setDisplayName] = useState("");
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<DirectoryRow | null>(null);
-  const [results, setResults] = useState<DirectoryRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = React.useState("");
+  const [city, setCity] = React.useState("");
+  const [postalCode, setPostalCode] = React.useState("");
+  const [country, setCountry] = React.useState<Country>("DE");
 
-  const canSubmit = useMemo(() => {
-    return displayName.trim().length > 1 && !!selected?.id && !loading;
-  }, [displayName, selected, loading]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [success, setSuccess] = React.useState<SetupSuccess | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const canSubmit = name.trim().length >= 2 && !loading;
 
-    async function run() {
-      setSearching(true);
+  const inviteLink = React.useMemo(() => {
+    if (!success?.invite_code) return "";
+    if (typeof window === "undefined") return `/setup/join?code=${success.invite_code}`;
+    return `${window.location.origin}/setup/join?code=${success.invite_code}`;
+  }, [success?.invite_code]);
 
-      const q = query.trim();
-      if (q.length < 2) {
-        setResults([]);
-        setSearching(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("ditib_directory")
-        .select("id, name, city, postal_code")
-        .ilike("name", `%${q}%`)
-        .order("name", { ascending: true })
-        .limit(20);
-
-      if (cancelled) return;
-
-      if (error) {
-        setResults([]);
-        setSearching(false);
-        return;
-      }
-
-      setResults((data ?? []) as DirectoryRow[]);
-      setSearching(false);
+  async function copyToClipboard(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      // no-op
     }
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [query, supabase]);
+  }
 
   async function submit() {
+    if (!canSubmit) return;
     setError(null);
-
-    if (!selected?.id) {
-      setError("Bitte wähle eine Gemeinde aus dem Verzeichnis.");
-      return;
-    }
-
+    setSuccess(null);
     setLoading(true);
 
-    const res = await fetch("/api/setup/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        display_name: displayName.trim(),
-        directory_id: selected.id,
-      }),
-    });
+    try {
+      const res = await fetch("/api/setup/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          city: city.trim() || null,
+          postal_code: postalCode.trim() || null,
+          country,
+        }),
+      });
 
-    setLoading(false);
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      if (json?.error === "TENANT_ALREADY_EXISTS") {
-        setError(
-          "Diese Gemeinde ist bereits eingerichtet. Bitte nutze 'Zugang anfragen'."
-        );
+      const json: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        if (isRecord(json) && json.error === "ALREADY_SETUP") {
+          setError("Für dieses Profil wurde bereits ein Tenant eingerichtet.");
+          return;
+        }
+        setError("Setup konnte nicht abgeschlossen werden. Bitte erneut versuchen.");
         return;
       }
-      setError(
-        "Setup konnte nicht abgeschlossen werden. Bitte erneut versuchen."
-      );
-      return;
-    }
 
-    router.push("/app");
-    router.refresh();
+      const data = isRecord(json) && isRecord(json.data) ? json.data : null;
+      const tenant_id = data && typeof data.tenant_id === "string" ? data.tenant_id : "";
+      const invite_code = data && typeof data.invite_code === "string" ? data.invite_code : "";
+
+      if (!tenant_id || !invite_code) {
+        setError("Setup erfolgreich, aber Antwort unvollständig.");
+        return;
+      }
+
+      setSuccess({ tenant_id, invite_code });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm text-white/70">Dein Name (Profil)</label>
+        <label className="mb-1 block text-xs ui-muted">Gemeindename*</label>
         <input
-          className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none focus:border-white/20"
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="z.B. Mehmet Çatalsakal"
+          className="ui-input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="z.B. DITIB Musterstadt"
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs ui-muted">Ort</label>
+          <input
+            className="ui-input"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="z.B. Berlin"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs ui-muted">PLZ</label>
+          <input
+            className="ui-input"
+            value={postalCode}
+            onChange={(e) => setPostalCode(e.target.value)}
+            placeholder="z.B. 10115"
+          />
+        </div>
       </div>
 
       <div>
-        <label className="text-sm text-white/70">
-          Gemeinde (DITIB Directory)
-        </label>
-        <input
-          className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none focus:border-white/20"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setSelected(null);
-            setError(null);
-          }}
-          placeholder="Suche z.B. 'DITIB Ebersbach'..."
-        />
-
-        <div className="mt-2 rounded-xl border border-white/10 bg-white/5">
-          {searching ? (
-            <div className="px-3 py-2 text-sm text-white/60">Suche...</div>
-          ) : results.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-white/60">
-              {query.trim().length < 2
-                ? "Mindestens 2 Zeichen eingeben."
-                : "Keine Treffer."}
-            </div>
-          ) : (
-            <div className="max-h-56 overflow-auto">
-              {results.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  className="w-full border-b border-white/10 px-3 py-2 text-left text-sm hover:bg-white/10 last:border-b-0"
-                  onClick={() => {
-                    setSelected(r);
-                    setQuery(r.name);
-                    setResults([]);
-                  }}
-                >
-                  <div className="text-white/90">{r.name}</div>
-                  <div className="text-xs text-white/50">
-                    {r.postal_code ?? ""} {r.city ?? ""}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {selected ? (
-          <div className="mt-2 text-xs text-white/60">
-            Ausgewählt: <span className="text-white/80">{selected.name}</span>
-          </div>
-        ) : null}
+        <label className="mb-1 block text-xs ui-muted">Land</label>
+        <select
+          className="ui-input"
+          value={country}
+          onChange={(e) => setCountry((e.target.value as Country) ?? "DE")}
+        >
+          <option value="DE">Deutschland (DE)</option>
+          <option value="AT">Österreich (AT)</option>
+          <option value="CH">Schweiz (CH)</option>
+        </select>
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+        <div className="rounded-xl border border-red-500/35 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       ) : null}
 
       <button
         type="button"
-        onClick={submit}
+        onClick={() => void submit()}
         disabled={!canSubmit}
-        className="w-full rounded-xl bg-white px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
+        className="ui-btn ui-btn-primary h-11 w-full disabled:opacity-60"
       >
         {loading ? "Speichere..." : "Setup abschließen (ADMIN)"}
       </button>
+
+      {success ? (
+        <div className="space-y-3 rounded-xl border border-emerald-500/35 bg-emerald-500/10 p-3">
+          <div>
+            <div className="text-xs ui-muted">Invite Code</div>
+            <div className="mt-1 text-2xl font-semibold tracking-wider">
+              {success.invite_code}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void copyToClipboard(success.invite_code)}
+              className="ui-btn h-10 px-3 text-sm"
+            >
+              Invite Code kopieren
+            </button>
+            <button
+              type="button"
+              onClick={() => void copyToClipboard(inviteLink)}
+              className="ui-btn h-10 px-3 text-sm"
+            >
+              Einladungslink kopieren
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                router.push("/app");
+                router.refresh();
+              }}
+              className="ui-btn ui-btn-primary h-10 px-3 text-sm"
+            >
+              Zum Dashboard
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

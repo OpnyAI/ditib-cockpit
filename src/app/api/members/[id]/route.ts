@@ -81,6 +81,48 @@ async function getAuthContext() {
   return { supabase, userId: user.id, profile };
 }
 
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+
+  if (!id || !isUuid(id)) {
+    return NextResponse.json(
+      { error: "Ungültige Mitglied-ID." },
+      { status: 400 },
+    );
+  }
+
+  const ctx = await getAuthContext();
+  if ("error" in ctx) return ctx.error;
+
+  const { data, error } = await ctx.supabase
+    .from("tenant_members")
+    .select(
+      "id, tenant_id, full_name, function_title, email, phone, notes, is_active, created_at, updated_at, created_by, updated_by",
+    )
+    .eq("id", id)
+    .eq("tenant_id", ctx.profile.tenant_id)
+    .maybeSingle();
+
+  if (error) {
+    return NextResponse.json(
+      { error: `Mitglied konnte nicht geladen werden: ${error.message}` },
+      { status: 500 },
+    );
+  }
+
+  if (!data) {
+    return NextResponse.json(
+      { error: "Mitglied nicht gefunden." },
+      { status: 404 },
+    );
+  }
+
+  return NextResponse.json({ member: data }, { status: 200 });
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },

@@ -20,9 +20,15 @@ function getAdminClient() {
 
   if (!url || !serviceKey) {
     throw new Error(
-      "Missing Supabase env vars. Require NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY."
+      "Missing Supabase env vars. Require NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY.",
     );
   }
+
+  console.log("[api/finance/getAdminClient] url=", url);
+  console.log(
+    "[api/finance/getAdminClient] serviceKeyPrefix=",
+    serviceKey.slice(0, 8),
+  );
 
   return createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -81,6 +87,11 @@ const TX_SELECT =
 
 export async function GET(req: Request) {
   const ctx = await getAuthContext();
+  console.log("[api/finance/transactions] ctx", {
+    userId: "error" in ctx ? null : ctx.userId,
+    tenantId: "error" in ctx ? null : ctx.tenantId,
+    role: "error" in ctx ? null : ctx.role,
+  });
   if ("error" in ctx) return ctx.error;
 
   if (!canRead(ctx.role)) {
@@ -96,13 +107,20 @@ export async function GET(req: Request) {
   // includeArchived=1
   // limit, offset
   const month = searchParams.get("month");
+  console.log("[api/finance/transactions] query", {
+    url: req.url,
+    month,
+    includeArchived: searchParams.get("includeArchived"),
+    type: searchParams.get("type"),
+    accountId: searchParams.get("accountId"),
+  });
   const type = searchParams.get("type");
   const accountId = searchParams.get("accountId");
   const includeArchived = searchParams.get("includeArchived") === "1";
 
   const limit = Math.min(
     Math.max(parseInt(searchParams.get("limit") || "200", 10), 1),
-    500
+    500,
   );
   const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
 
@@ -139,6 +157,17 @@ export async function GET(req: Request) {
   }
 
   const { data, error } = await q;
+  console.log("[api/finance/transactions] result", {
+    error: error?.message ?? null,
+    count: (data ?? []).length,
+    sample: (data ?? []).slice(0, 2).map((t: any) => ({
+      id: t.id,
+      booking_date: t.booking_date,
+      amount_cents: t.amount_cents,
+      reference: t.reference,
+      tenant_id: t.tenant_id,
+    })),
+  });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -178,14 +207,12 @@ export async function POST(req: Request) {
     typeof b.bookingDate === "string" ? b.bookingDate.trim() : "";
   const amountCents = Number(b.amountCents);
   const accountId = typeof b.accountId === "string" ? b.accountId : "";
-  const categoryId =
-    typeof b.categoryId === "string" ? b.categoryId : null;
+  const categoryId = typeof b.categoryId === "string" ? b.categoryId : null;
 
   const counterparty =
     typeof b.counterparty === "string" ? b.counterparty.trim() : null;
   const memo = typeof b.memo === "string" ? b.memo.trim() : null;
-  const reference =
-    typeof b.reference === "string" ? b.reference.trim() : null;
+  const reference = typeof b.reference === "string" ? b.reference.trim() : null;
 
   if (type !== "INCOME" && type !== "EXPENSE") {
     return NextResponse.json({ error: "TYPE_INVALID" }, { status: 400 });
@@ -193,7 +220,7 @@ export async function POST(req: Request) {
   if (!bookingDate || !isValidDateYYYYMMDD(bookingDate)) {
     return NextResponse.json(
       { error: "BOOKING_DATE_INVALID" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (!accountId) {
@@ -202,7 +229,7 @@ export async function POST(req: Request) {
   if (!Number.isInteger(amountCents) || amountCents <= 0) {
     return NextResponse.json(
       { error: "AMOUNT_CENTS_INVALID" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -232,7 +259,7 @@ export async function POST(req: Request) {
     if (catErr || !cat) {
       return NextResponse.json(
         { error: "CATEGORY_NOT_FOUND" },
-        { status: 400 }
+        { status: 400 },
       );
     }
   }
